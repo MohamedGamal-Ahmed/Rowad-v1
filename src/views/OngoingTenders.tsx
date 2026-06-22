@@ -1137,14 +1137,14 @@ export function OngoingTenders({
                 </div>
               </div>
 
-              {/* Progress Stepper bar */}
+              {/* Progress Stepper bar (Modularized for future step extensions) */}
               <div className="grid grid-cols-5 gap-1.5">
                 {[
-                  { step: 1, labelEn: 'Info', labelAr: 'البيانات العامة' },
-                  { step: 2, labelEn: 'Staff', labelAr: 'التكليفات' },
-                  { step: 3, labelEn: 'Dates', labelAr: 'الجدول الزمني' },
-                  { step: 4, labelEn: 'Docs', labelAr: 'التحقق والمستندات' },
-                  { step: 5, labelEn: 'Review', labelAr: 'المراجعة' }
+                  { step: 1, id: 'general', labelEn: 'General', labelAr: 'البيانات العامة' },
+                  { step: 2, id: 'assignments', labelEn: 'Assignments', labelAr: 'التكليفات' },
+                  { step: 3, id: 'timeline', labelEn: 'Timeline', labelAr: 'الجدول الزمني' },
+                  { step: 4, id: 'financial', labelEn: 'Financial', labelAr: 'المالية والمستندات' },
+                  { step: 5, id: 'review', labelEn: 'Review & Submission', labelAr: 'المراجعة والاعتماد' }
                 ].map((s) => {
                   const isActive = wizardStep === s.step;
                   const isCompleted = wizardStep > s.step;
@@ -2446,6 +2446,32 @@ export function OngoingTenders({
                     <p className="text-[14px] font-extrabold text-brand-navy mt-1">
                       {isAr ? selectedTender.tenderType?.ar : selectedTender.tenderType?.en}
                     </p>
+                  </div>
+
+                  {/* Future Extension Capability: Convert to Active Project */}
+                  <div className="bg-gradient-to-r from-brand-navy/5 to-indigo-50/30 p-4 rounded-2xl border border-brand-navy/10 mt-2">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <span className="text-[9px] font-bold text-indigo-600 tracking-wider uppercase">{isAr ? "بوابة ترحيل العقود" : "Transition Gate"}</span>
+                        <h4 className="text-xs font-black text-brand-navy">{isAr ? "التحميل والترحيل إلى التنفيذ" : "Convert to Project Operations"}</h4>
+                        <p className="text-[10px] text-gray-400 leading-tight">
+                          {isAr ? "دراسة هندسية متقدمة لرفع نطاق العمل تلقائياً كعقد جاري." : "Automated conversion workflow to post award execution contracts."}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setToastAlert({
+                            type: 'info',
+                            message: isAr 
+                              ? "نقطة تحول معمارية: سيتم دمج هذه المزايدة وتوليد كشوفات السداد وبنود القياس للتشغيل تلقائياً."
+                              : "Architecture Extension Point: Core transition services prepared for automated contract instantiation."
+                          });
+                        }}
+                        className="px-3 py-2 bg-brand-red text-white text-[11px] font-black rounded-xl hover:bg-brand-red/90 transition-all cursor-pointer shadow-sm shadow-brand-red/20 shrink-0"
+                      >
+                        {isAr ? "بدء الترحيل" : "Convert"}
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}

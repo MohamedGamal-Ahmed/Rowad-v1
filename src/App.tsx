@@ -9,7 +9,6 @@ import { DocumentControl, DocumentRecord, mockDocuments } from './views/Document
 import { SettingsView, TimelineRules } from './views/Settings';
 import { mockProjects } from './data';
 import { TenderService } from './services/TenderService';
-import { TenderMapper } from './mappers/TenderMapper';
 import { ProjectControlsService } from './services/ProjectControlsService';
 import { ProjectControlsMapper } from './mappers/ProjectControlsMapper';
 
@@ -57,8 +56,7 @@ export default function App() {
 
       const service = new TenderService();
       // Solve dynamic calculated dates, days remaining, and health indicators chronologically using persistent offsets
-      const dbTenders = await service.getTenders(timelineRules);
-      const legacyTenders = dbTenders.map(t => TenderMapper.toLegacy(t));
+      const legacyTenders = await service.getLegacyTenders(timelineRules);
       setTendersList(legacyTenders);
     }
     loadTenders();
@@ -82,8 +80,7 @@ export default function App() {
     // Persist each item into the repository via TenderService
     const service = new TenderService();
     for (const item of updatedList) {
-      const domainTender = TenderMapper.toDomain(item);
-      await service.commitTender(domainTender);
+      await service.commitLegacyTender(item);
     }
   };
 

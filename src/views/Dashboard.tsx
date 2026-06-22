@@ -14,6 +14,7 @@ import { Tender } from './OngoingTenders';
 import { ExecutionRecord } from './ProjectExecution';
 import { DocumentRecord } from './DocumentControl';
 import { FinancialsCalculator } from '../business-rules/FinancialsCalculator';
+import { DashboardService } from '../services/DashboardService';
 
 interface DashboardProps {
   lang: 'ar' | 'en';
@@ -72,41 +73,22 @@ export function Dashboard({ lang, list, executionRecords, documentRecords }: Das
     return `${(val / 1e6).toFixed(1)} ${isAr ? 'مليون د.إ' : 'Million AED'}`;
   };
 
-  // 2. Calculations over dynamic portfolios
-  const totalTendersCount = list.length;
-  const activeTendersCount = list.filter(t => t.recordStatus === 'Active').length;
-  
-  const totalPreAwardAED = list.reduce((acc, curr) => acc + parseAED(curr.estimatedValue), 0);
-  const totalBondsAED = list.reduce((acc, curr) => acc + parseAED(curr.bondAmount), 0);
-  
-  // Execution financials
-  const totalCertifiedAED = executionRecords
-    .filter(r => r.type === 'IPC')
-    .reduce((acc, curr) => acc + parseAED(curr.valueAED), 0);
-
-  const totalClaimsAED = executionRecords
-    .filter(r => r.type === 'Claim')
-    .reduce((acc, curr) => acc + parseAED(curr.valueAED), 0);
-
-  const totalVariationAED = executionRecords
-    .filter(r => r.type === 'Variation Order')
-    .reduce((acc, curr) => acc + parseAED(curr.valueAED), 0);
-
-  // Total execution active value (combined certified + Claims + Variation Orders)
-  const totalActiveExecutionValue = executionRecords.reduce((acc, curr) => acc + parseAED(curr.valueAED), 0);
-
-  // Combine entire corporate commitment pipeline
-  const combinedPipelineVal = totalPreAwardAED + totalActiveExecutionValue;
-
-  // 3. Operational Risk Controls
-  // Total items tracked
-  const totalItemsCount = list.length + executionRecords.length;
-  // Healthy items count
-  const healthyItemsCount = 
-    list.filter(t => t.health === 'Healthy').length + 
-    executionRecords.filter(r => r.health === 'Healthy').length;
-
-  const healthyRatio = totalItemsCount > 0 ? (healthyItemsCount / totalItemsCount) * 100 : 100;
+  // 2. Delegate calculations over dynamic portfolios to the robust DashboardService
+  const dashboardService = new DashboardService();
+  const {
+    totalTendersCount,
+    activeTendersCount,
+    totalPreAwardAED,
+    totalBondsAED,
+    totalCertifiedAED,
+    totalClaimsAED,
+    totalVariationAED,
+    totalActiveExecutionValue,
+    combinedPipelineVal,
+    totalItemsCount,
+    healthyItemsCount,
+    healthyRatio
+  } = dashboardService.computeFromLegacyData(list, executionRecords);
 
   // Let's build KPI structures
   const executiveKPIs = [

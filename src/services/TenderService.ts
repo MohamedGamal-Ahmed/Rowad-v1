@@ -5,6 +5,7 @@ import { TimelineCalculator } from '../business-rules/TimelineCalculator';
 import { HealthCalculator } from '../business-rules/HealthCalculator';
 import { TimelineRules } from '../domain/administration/TimelineRules';
 import { AppConstants } from '../constants/AppConstants';
+import { TenderMapper, LegacyTender } from '../mappers/TenderMapper';
 
 export class TenderService {
   private repository: TenderRepository;
@@ -49,6 +50,22 @@ export class TenderService {
         }
       };
     });
+  }
+
+  /**
+   * Translates all active database domain aggregates into presentation legacy models to feed React.
+   */
+  public async getLegacyTenders(timelineRules?: TimelineRules): Promise<LegacyTender[]> {
+    const domainTenders = await this.getTenders(timelineRules);
+    return domainTenders.map(t => TenderMapper.toLegacy(t));
+  }
+
+  /**
+   * Accepts presentation models, performs mapping internally, and persists to repository.
+   */
+  public async commitLegacyTender(legacy: LegacyTender): Promise<{ success: boolean; errors: string[] }> {
+    const domainTender = TenderMapper.toDomain(legacy);
+    return await this.commitTender(domainTender);
   }
 
   /**

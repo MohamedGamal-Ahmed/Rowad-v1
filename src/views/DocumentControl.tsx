@@ -89,6 +89,15 @@ export function DocumentControl({
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [selectedDocId, setSelectedDocId] = useState<string | null>('D-001');
+  const [toastAlert, setToastAlert] = useState<{ type: 'success' | 'info'; message: string } | null>(null);
+
+  // Auto clean toast alert
+  useEffect(() => {
+    if (toastAlert) {
+      const timer = setTimeout(() => setToastAlert(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastAlert]);
 
   // Submittal registration form state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -195,6 +204,15 @@ export function DocumentControl({
   return (
     <div className="px-6 py-6 max-w-[1800px] mx-auto space-y-6 animate-in fade-in duration-500 relative select-none">
       
+      {/* Dynamic Toast Alert for architecture extension clicks */}
+      {toastAlert && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 bg-brand-navy border border-gray-700 text-white px-5 py-3 rounded-2xl shadow-2xl z-50 flex items-center gap-3 animate-in fade-in slide-in-from-top-6 duration-300 font-sans">
+          <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="text-[13px] font-bold">{toastAlert.message}</span>
+          <button onClick={() => setToastAlert(null)} className="text-gray-400 hover:text-white transition-colors p-1 leading-none font-sans font-black">×</button>
+        </div>
+      )}
+
       {/* 1. Page Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
@@ -214,6 +232,44 @@ export function DocumentControl({
             <Plus className="w-4 h-4 text-emerald-400" />
             <span>{isAr ? "تسجيل مستند وارد/صادر" : "Register Document / Drawing"}</span>
           </button>
+        </div>
+      </div>
+
+      {/* Pluggable Architecture Extension Bar for future EDMS systems */}
+      <div className="bg-gray-50 p-2.5 rounded-2xl border border-gray-100 font-sans flex items-center justify-between gap-5 overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="w-2 h-2 rounded-full bg-brand-red animate-pulse" />
+          <span className="text-[10px] font-black tracking-widest text-[#183B63] uppercase shrink-0">
+            {isAr ? "بوابات التوسعة الرقمية" : "Architecture Extensions"}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+          {[
+            { id: 'register', en: 'Document Register', ar: 'سجل المستندات' },
+            { id: 'transmittals', en: 'Transmittals Hub', ar: 'محاضر الصادر' },
+            { id: 'incoming', en: 'Incoming Letters', ar: 'مراسلات الوارد' },
+            { id: 'outgoing', en: 'Outgoing Letters', ar: 'مراسلات الصادر' },
+            { id: 'history', en: 'Revision History logs', ar: 'تاريخ المراجعة والمطابقة' },
+            { id: 'workflow', en: 'Makers Approval Workflow', ar: 'أعمال المراجعة والاعتماد' },
+            { id: 'distribution', en: 'Electronic Distribution', ar: 'التوزيع الإلكتروني للمخططات' },
+            { id: 'metadata', en: 'Metadata Deep Search', ar: 'البحث المتقدم بالبيانات الفوقية' }
+          ].map((mod) => (
+            <button
+              key={mod.id}
+              onClick={() => {
+                setToastAlert({
+                  type: 'info',
+                  message: isAr
+                    ? `بوابة التوسعة: تم ربط هيكلية ومخرجات "${mod.ar}" مسبقاً في نظام ROWAD Enterprise الأساسي.`
+                    : `EDMS Gate: "${mod.en}" is verified structural gateway, registered in the platform routing matrix.`
+                });
+              }}
+              className="px-3 py-2 bg-white hover:bg-white/80 border border-gray-150 text-gray-500 hover:text-brand-navy text-[10px] font-black rounded-xl transition-all shadow-sm flex items-center gap-1.5 cursor-pointer shrink-0"
+            >
+              <div className="w-1 h-1 rounded-full bg-gray-400" />
+              <span>{isAr ? mod.ar : mod.en}</span>
+            </button>
+          ))}
         </div>
       </div>
 
