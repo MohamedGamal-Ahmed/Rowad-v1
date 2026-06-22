@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import { BiText } from '../components/BiText';
 import { TimelineRules } from './Settings';
+import { TimelineCalculator } from '../business-rules/TimelineCalculator';
+import { FinancialsCalculator } from '../business-rules/FinancialsCalculator';
 
 // Enterprise Tender Model matching Construction Pre-Award system
 export interface Tender {
@@ -55,9 +57,7 @@ export interface Tender {
 }
 
 const parseValue = (valStr: string): number => {
-  if (!valStr) return 0;
-  const clean = valStr.replace(/[^\d.]/g, '');
-  return parseFloat(clean) || 0;
+  return FinancialsCalculator.parseToNumber(valStr);
 };
 
 export const initialTenders: Tender[] = [
@@ -544,23 +544,33 @@ export function OngoingTenders({
       techDate: newTechDate
     };
 
+    // Calculate core milestones chronologically by delegating to TimelineCalculator business rules
+    const milestones = TimelineCalculator.calculateMilestones(newTechDate, rules);
+
     if (!wizardForm.overriddenFields.kickOffDate) {
-      calculated.kickOffDate = addDays(newTechDate, rules.kickOffOffset);
+      calculated.kickOffDate = milestones.kickOffDate;
     }
     if (!wizardForm.overriddenFields.riskDueDate) {
-      calculated.riskDueDate = addDays(newTechDate, rules.riskAssessmentOffset);
+      calculated.riskDueDate = milestones.riskDueDate;
     }
     if (!wizardForm.overriddenFields.contractQualsDueDate) {
-      calculated.contractQualsDueDate = addDays(newTechDate, rules.contractQualificationOffset);
+      calculated.contractQualsDueDate = milestones.contractQualsDueDate;
     }
     if (!wizardForm.overriddenFields.alignmentDate) {
-      calculated.alignmentDate = addDays(newTechDate, rules.alignmentOffset);
+      calculated.alignmentDate = milestones.alignmentDate;
     }
     if (!wizardForm.overriddenFields.followUpDate) {
-      calculated.followUpDate = addDays(newTechDate, rules.intermediateFollowUpOffset);
+      calculated.followUpDate = milestones.followUpDate;
     }
     if (!wizardForm.overriddenFields.commDate) {
-      calculated.commDate = addDays(newTechDate, 12); // Suggested 12 days after Tech
+      // 12 days after baseline tech date is standard commercial submission offset target
+      calculated.commDate = TimelineCalculator.calculateMilestones(newTechDate, {
+        kickOffOffset: 12,
+        riskAssessmentOffset: 12,
+        contractQualificationOffset: 12,
+        alignmentOffset: 12,
+        intermediateFollowUpOffset: 12
+      }).kickOffDate;
     }
 
     setWizardForm(prev => ({
@@ -764,6 +774,10 @@ export function OngoingTenders({
 • Checklist Completed: ${checklistNotes.join(', ') || 'None'}
 • Site Visit: ${wizardForm.siteVisitRequired ? `Required on ${wizardForm.siteVisitDate}` : 'Not Required'}`;
 
+    const parsedValue = FinancialsCalculator.parseToNumber(wizardForm.estValue);
+    const parsedCost = FinancialsCalculator.parseToNumber(wizardForm.estCost);
+    const calculatedBond = parsedValue * 0.02; // 2% tender bid bond calculation
+
     const createdTender: Tender = {
       id: `t-wizard-${Date.now()}`,
       projectCode: wizardForm.projectCode,
@@ -787,11 +801,11 @@ export function OngoingTenders({
       projectStatus: { en: 'Active Study', ar: 'تحت الدراسة والتقدير' },
       awardStatus: { en: 'Pending Submission', ar: 'قيد تجهيز المغلفات' },
       recordStatus: 'Active',
-      daysRemaining: wizardForm.techDate ? Math.ceil((new Date(wizardForm.techDate).getTime() - new Date().getTime()) / (1000 * 3600 * 24)) : 30,
+      daysRemaining: wizardForm.techDate ? Math.max(0, Math.ceil((new Date(wizardForm.techDate).getTime() - new Date().getTime()) / (1000 * 3600 * 24))) : 30,
       health: 'Healthy',
-      estimatedValue: wizardForm.estValue ? `${wizardForm.currency} ${parseFloat(wizardForm.estValue.replace(/,/g, '')).toLocaleString()}` : `${wizardForm.currency} 0`,
-      estimatedCost: wizardForm.estCost ? `${wizardForm.currency} ${parseFloat(wizardForm.estCost.replace(/,/g, '')).toLocaleString()}` : `${wizardForm.currency} 0`,
-      bondAmount: wizardForm.estValue ? `${wizardForm.currency} ${(parseFloat(wizardForm.estValue.replace(/,/g, '')) * 0.02).toLocaleString()}` : `${wizardForm.currency} 0`,
+      estimatedValue: `${wizardForm.currency} ${FinancialsCalculator.formatAmount(parsedValue)}`,
+      estimatedCost: `${wizardForm.currency} ${FinancialsCalculator.formatAmount(parsedCost)}`,
+      bondAmount: `${wizardForm.currency} ${FinancialsCalculator.formatAmount(calculatedBond)}`,
       currency: wizardForm.currency,
       tenderType: { en: wizardForm.tenderTypeEn, ar: wizardForm.tenderTypeAr },
       clientName: { en: wizardForm.clientEn, ar: wizardForm.clientAr },

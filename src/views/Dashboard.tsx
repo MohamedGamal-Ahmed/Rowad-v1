@@ -13,6 +13,7 @@ import { BiText } from '../components/BiText';
 import { Tender } from './OngoingTenders';
 import { ExecutionRecord } from './ProjectExecution';
 import { DocumentRecord } from './DocumentControl';
+import { FinancialsCalculator } from '../business-rules/FinancialsCalculator';
 
 interface DashboardProps {
   lang: 'ar' | 'en';
@@ -61,10 +62,7 @@ export function Dashboard({ lang, list, executionRecords, documentRecords }: Das
 
   // 1. Precise Financial Parsing Assistant
   const parseAED = (valStr: string): number => {
-    if (!valStr || valStr === 'N/A' || valStr.includes('Regulatory')) return 0;
-    // Extract numbers and keep track of actual sums
-    const clean = valStr.replace(/[^0-9]/g, '');
-    return parseInt(clean, 10) || 0;
+    return FinancialsCalculator.parseToNumber(valStr);
   };
 
   const formatCurrency = (val: number): string => {

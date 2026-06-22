@@ -8,6 +8,10 @@ import { ProjectExecution, ExecutionRecord, mockExecutionData } from './views/Pr
 import { DocumentControl, DocumentRecord, mockDocuments } from './views/DocumentControl';
 import { SettingsView, TimelineRules } from './views/Settings';
 import { mockProjects } from './data';
+import { TenderService } from './services/TenderService';
+import { TenderMapper } from './mappers/TenderMapper';
+import { ProjectControlsService } from './services/ProjectControlsService';
+import { ProjectControlsMapper } from './mappers/ProjectControlsMapper';
 
 export default function App() {
   const [lang, setLang] = useState<'ar' | 'en'>('ar');
@@ -40,6 +44,59 @@ export default function App() {
   const handleUpdateRules = (newRules: TimelineRules) => {
     setTimelineRules(newRules);
     localStorage.setItem('preaward_timeline_rules', JSON.stringify(newRules));
+  };
+
+  // Modern Clean Architecture Syncer
+  useEffect(() => {
+    async function loadTenders() {
+      // Seed initial mock tenders in database if completely empty to bootstrap system smoothly
+      const rawData = localStorage.getItem('preaward_tenders_db');
+      if (!rawData) {
+        localStorage.setItem('preaward_tenders_db', JSON.stringify(initialTenders));
+      }
+
+      const service = new TenderService();
+      // Solve dynamic calculated dates, days remaining, and health indicators chronologically using persistent offsets
+      const dbTenders = await service.getTenders(timelineRules);
+      const legacyTenders = dbTenders.map(t => TenderMapper.toLegacy(t));
+      setTendersList(legacyTenders);
+    }
+    loadTenders();
+  }, [timelineRules]);
+
+  // Load Project Controls records cleanly on component mount using service-managed repository layer
+  useEffect(() => {
+    async function loadProjectControls() {
+      const pcService = new ProjectControlsService();
+      const records = await pcService.getRecords();
+      const legacyRecords = records.map(r => ProjectControlsMapper.toLegacy(r));
+      setExecutionRecords(legacyRecords);
+    }
+    loadProjectControls();
+  }, []);
+
+  const handleUpdateTendersList = async (updater: React.SetStateAction<Tender[]>) => {
+    const updatedList = typeof updater === 'function' ? (updater as any)(tendersList) : updater;
+    setTendersList(updatedList);
+
+    // Persist each item into the repository via TenderService
+    const service = new TenderService();
+    for (const item of updatedList) {
+      const domainTender = TenderMapper.toDomain(item);
+      await service.commitTender(domainTender);
+    }
+  };
+
+  const handleUpdateRecordsList = async (updater: React.SetStateAction<ExecutionRecord[]>) => {
+    const updatedList = typeof updater === 'function' ? (updater as any)(executionRecords) : updater;
+    setExecutionRecords(updatedList);
+
+    // Persist each item into storage via ProjectControlsService
+    const pcService = new ProjectControlsService();
+    for (const item of updatedList) {
+      const domainRec = ProjectControlsMapper.toDomain(item);
+      await pcService.commitRecord(domainRec);
+    }
   };
 
   useEffect(() => {
@@ -90,14 +147,14 @@ export default function App() {
             <OngoingTenders 
               lang={lang} 
               list={tendersList}
-              onUpdateList={setTendersList}
+              onUpdateList={handleUpdateTendersList}
               timelineRules={timelineRules}
             />
           ) : currentView === 'project-execution' ? (
             <ProjectExecution 
               lang={lang} 
               records={executionRecords}
-              onUpdateRecords={setExecutionRecords}
+              onUpdateRecords={handleUpdateRecordsList}
             />
           ) : currentView === 'document-control' ? (
             <DocumentControl 
