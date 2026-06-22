@@ -1,0 +1,260 @@
+import { Tender as NewTender } from '../domain/pre-award/Tender';
+import { Priority } from '../enums/Priority';
+import { RecordStatus } from '../enums/RecordStatus';
+import { WorkflowStatus } from '../enums/WorkflowStatus';
+import { Currency } from '../enums/Currency';
+import { Money } from '../domain/common/Money';
+
+// Explicit Legacy Tender interface to map against
+export interface LegacyTender {
+  id: string;
+  projectCode: string;
+  tenderNumber: string;
+  projectName: { en: string; ar: string };
+  location: { en: string; ar: string };
+  coordinator: { en: string; ar: string };
+  contractsEngineer: { en: string; ar: string };
+  tenderStudyEngineer?: { en: string; ar: string };
+  department?: string;
+  priority?: 'Low' | 'Medium' | 'High' | 'Critical';
+  techSubmissionDate: string;
+  commSubmissionDate: string;
+  overallSubmissionDate: string;
+  closingDate?: string;
+  kickOffDate?: string;
+  alignmentDate?: string;
+  followUpDate?: string;
+  riskDueDate?: string;
+  contractQualsDueDate?: string;
+  projectStatus: { en: string; ar: string };
+  awardStatus: { en: string; ar: string };
+  recordStatus: 'Active' | 'Under Review' | 'Archived' | 'On Hold';
+  daysRemaining: number;
+  health: 'Healthy' | 'Due Soon' | 'Overdue' | 'Archived';
+  estimatedValue: string;
+  estimatedCost?: string;
+  bondAmount: string;
+  currency: string;
+  tenderType: { en: string; ar: string };
+  clientName: { en: string; ar: string };
+  consultant?: { en: string; ar: string };
+  branch?: { en: string; ar: string };
+  businessUnit?: { en: string; ar: string };
+  notes: Array<{ id: string; author: string; date: string; text: string }>;
+  documents: Array<{ id: string; name: string; size: string; link: string }>;
+  checklistReceived?: boolean;
+  checklistDrawings?: boolean;
+  checklistBOQ?: boolean;
+  checklistSpecs?: boolean;
+  siteVisitRequired?: boolean;
+  siteVisitDate?: string;
+}
+
+export class TenderMapper {
+  private static parseAmount(valStr: string | undefined): number {
+    if (!valStr) return 0;
+    const clean = valStr.replace(/[^\d.]/g, '');
+    return parseFloat(clean) || 0;
+  }
+
+  private static formatAmount(amount: number, currency: string): string {
+    return `${currency} ${amount.toLocaleString()}`;
+  }
+
+  private static mapPriority(priorityStr: string | undefined): Priority {
+    switch (priorityStr) {
+      case 'Critical': return Priority.CRITICAL;
+      case 'High': return Priority.HIGH;
+      case 'Medium': return Priority.MEDIUM;
+      case 'Low':
+      default:
+        return Priority.LOW;
+    }
+  }
+
+  private static mapWorkflowStatus(projectStatus: string | undefined, awardStatus: string | undefined): WorkflowStatus {
+    const proj = projectStatus?.toLowerCase() || '';
+    const aw = awardStatus?.toLowerCase() || '';
+
+    if (aw.includes('awarded')) return WorkflowStatus.AWARDED;
+    if (aw.includes('lost')) return WorkflowStatus.LOST;
+    if (aw.includes('under negotiation')) return WorkflowStatus.UNDER_NEGOTIATION;
+    
+    if (proj.includes('ready') || proj.includes('submission')) return WorkflowStatus.READY_FOR_SUBMISSION;
+    if (proj.includes('preparing')) return WorkflowStatus.UNDER_STUDY;
+    if (proj.includes('draft')) return WorkflowStatus.DRAFT;
+    if (proj.includes('cancel')) return WorkflowStatus.CANCELLED;
+
+    return WorkflowStatus.UNDER_STUDY;
+  }
+
+  public static toDomain(legacy: LegacyTender): NewTender {
+    const currency = (legacy.currency as Currency) || Currency.AED;
+
+    const estimatedValueMoney: Money = {
+      amount: this.parseAmount(legacy.estimatedValue),
+      currency
+    };
+
+    const estimatedCostMoney: Money | undefined = legacy.estimatedCost 
+      ? { amount: this.parseAmount(legacy.estimatedCost), currency }
+      : undefined;
+
+    const bondAmountMoney: Money = {
+      amount: this.parseAmount(legacy.bondAmount),
+      currency
+    };
+
+    const workflowStatus = this.mapWorkflowStatus(legacy.projectStatus?.en, legacy.awardStatus?.en);
+
+    const mappedRecordStatus = legacy.recordStatus === 'Archived' 
+      ? RecordStatus.ARCHIVED 
+      : RecordStatus.ACTIVE;
+
+    return {
+      id: legacy.id,
+      projectCode: legacy.projectCode,
+      tenderNumber: legacy.tenderNumber,
+      projectName: legacy.projectName,
+      general: {
+        location: legacy.location,
+        priority: this.mapPriority(legacy.priority),
+        department: legacy.department || 'Pre-Award Civil Core',
+        clientName: legacy.clientName,
+        consultant: legacy.consultant,
+        branch: legacy.branch,
+        businessUnit: legacy.businessUnit,
+        tenderType: legacy.tenderType
+      },
+      assignments: {
+        coordinator: legacy.coordinator,
+        contractsEngineer: legacy.contractsEngineer,
+        tenderStudyEngineer: legacy.tenderStudyEngineer
+      },
+      timeline: {
+        techSubmissionDate: legacy.techSubmissionDate,
+        commSubmissionDate: legacy.commSubmissionDate,
+        overallSubmissionDate: legacy.overallSubmissionDate,
+        closingDate: legacy.closingDate,
+        kickOffDate: legacy.kickOffDate,
+        alignmentDate: legacy.alignmentDate,
+        followUpDate: legacy.followUpDate,
+        riskDueDate: legacy.riskDueDate,
+        contractQualsDueDate: legacy.contractQualsDueDate,
+        siteVisitRequired: legacy.siteVisitRequired,
+        siteVisitDate: legacy.siteVisitDate
+      },
+      financials: {
+        estimatedValue: estimatedValueMoney,
+        estimatedCost: estimatedCostMoney,
+        bondAmount: bondAmountMoney
+      },
+      status: {
+        recordStatus: mappedRecordStatus,
+        workflowStatus,
+        projectStatus: legacy.projectStatus,
+        awardStatus: legacy.awardStatus
+      },
+      checklist: {
+        checklistReceived: legacy.checklistReceived,
+        checklistDrawings: legacy.checklistDrawings,
+        checklistBOQ: legacy.checklistBOQ,
+        checklistSpecs: legacy.checklistSpecs
+      },
+      documents: legacy.documents.map(doc => ({
+        id: doc.id,
+        name: doc.name,
+        size: doc.size,
+        link: doc.link
+      })),
+      notes: legacy.notes.map(note => ({
+        id: note.id,
+        author: note.author,
+        date: note.date,
+        text: note.text
+      }))
+    };
+  }
+
+  public static toLegacy(domain: NewTender): LegacyTender {
+    const rawCurrency = domain.financials.estimatedValue.currency;
+
+    let priorityStr: 'Low' | 'Medium' | 'High' | 'Critical' = 'Medium';
+    if (domain.general.priority === Priority.CRITICAL) priorityStr = 'Critical';
+    else if (domain.general.priority === Priority.HIGH) priorityStr = 'High';
+    else if (domain.general.priority === Priority.MEDIUM) priorityStr = 'Medium';
+    else if (domain.general.priority === Priority.LOW) priorityStr = 'Low';
+
+    let recStatus: 'Active' | 'Under Review' | 'Archived' | 'On Hold' = 'Active';
+    if (domain.status.recordStatus === RecordStatus.ARCHIVED) {
+      recStatus = 'Archived';
+    } else {
+      // Intelligently maps to support backward compatibility
+      if (domain.status.workflowStatus === WorkflowStatus.DRAFT) {
+        recStatus = 'Under Review';
+      }
+    }
+
+    // Days remaining and Health will be dynamically computed during UI integration,
+    // but we support populating default fallback legacy values here.
+    const today = new Date('2026-06-22T05:25:00-07:00');
+    const targetDate = new Date(domain.timeline.techSubmissionDate);
+    const diffTime = targetDate.getTime() - today.getTime();
+    const daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    let healthStr: 'Healthy' | 'Due Soon' | 'Overdue' | 'Archived' = 'Healthy';
+    if (recStatus === 'Archived') {
+      healthStr = 'Archived';
+    } else if (daysRemaining < 0) {
+      healthStr = 'Overdue';
+    } else if (daysRemaining <= 7) {
+      healthStr = 'Due Soon';
+    }
+
+    return {
+      id: domain.id,
+      projectCode: domain.projectCode,
+      tenderNumber: domain.tenderNumber,
+      projectName: domain.projectName,
+      location: domain.general.location,
+      coordinator: domain.assignments.coordinator,
+      contractsEngineer: domain.assignments.contractsEngineer,
+      tenderStudyEngineer: domain.assignments.tenderStudyEngineer,
+      department: domain.general.department,
+      priority: priorityStr,
+      techSubmissionDate: domain.timeline.techSubmissionDate,
+      commSubmissionDate: domain.timeline.commSubmissionDate,
+      overallSubmissionDate: domain.timeline.overallSubmissionDate,
+      closingDate: domain.timeline.closingDate,
+      kickOffDate: domain.timeline.kickOffDate,
+      alignmentDate: domain.timeline.alignmentDate,
+      followUpDate: domain.timeline.followUpDate,
+      riskDueDate: domain.timeline.riskDueDate,
+      contractQualsDueDate: domain.timeline.contractQualsDueDate,
+      projectStatus: domain.status.projectStatus,
+      awardStatus: domain.status.awardStatus,
+      recordStatus: recStatus,
+      daysRemaining: isNaN(daysRemaining) ? 0 : daysRemaining,
+      health: healthStr,
+      estimatedValue: this.formatAmount(domain.financials.estimatedValue.amount, rawCurrency),
+      estimatedCost: domain.financials.estimatedCost 
+        ? this.formatAmount(domain.financials.estimatedCost.amount, rawCurrency)
+        : undefined,
+      bondAmount: this.formatAmount(domain.financials.bondAmount.amount, rawCurrency),
+      currency: rawCurrency,
+      tenderType: domain.general.tenderType,
+      clientName: domain.general.clientName,
+      consultant: domain.general.consultant,
+      branch: domain.general.branch,
+      businessUnit: domain.general.businessUnit,
+      notes: domain.notes,
+      documents: domain.documents,
+      checklistReceived: domain.checklist.checklistReceived,
+      checklistDrawings: domain.checklist.checklistDrawings,
+      checklistBOQ: domain.checklist.checklistBOQ,
+      checklistSpecs: domain.checklist.checklistSpecs,
+      siteVisitRequired: domain.timeline.siteVisitRequired,
+      siteVisitDate: domain.timeline.siteVisitDate
+    };
+  }
+}
