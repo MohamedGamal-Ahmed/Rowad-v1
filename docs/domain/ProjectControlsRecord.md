@@ -5,7 +5,7 @@
 ---
 
 ## 1. Purpose
-The `ProjectControlsRecord` (previously `ExecutionRecord` in raw UI models) represents transaction submittal logs generated during active site execution. It links technical construction operations with executive financial tracking, monitoring Interim Payment Certificates (IPCs), Scope Variations, Claims, No Objection Certificates (NOCs), and Subcontractor Payment Requests (SPRs) against pre-award commercial estimates.
+The `ProjectControlsRecord` (previously `ExecutionRecord` in raw UI models) represents transaction submittal logs generated during active site execution. It links technical construction operations with executive financial tracking, monitoring Interim Payment Certificates (IPCs), Scope Variations, Claims, and No Objection Certificates (NOCs) against pre-award commercial estimates.
 
 ---
 
@@ -15,7 +15,7 @@ The `ProjectControlsRecord` (previously `ExecutionRecord` in raw UI models) repr
 | :--- | :--- | :--- | :--- |
 | `id` | `string` (UUID v4) | **Yes** | Persistent record ID matching the PostgreSQL database index. |
 | `recordStatus` | `RecordStatus` (Enum) | **Yes** | Administrative visibility (`ACTIVE` or `ARCHIVED`). |
-| `type` | `ProjectControlsRecordType` | **Yes** | Standard submittal categories: `IPC`, `Claim`, `Variation Order`, `NOC`, `SPR`. |
+| `type` | `ProjectControlsRecordType` | **Yes** | Standard submittal categories: `IPC`, `Claim`, `Variation Order`, `NOC`. |
 | `code` | `string` | **Yes** | Serial tracking number of the operational record (e.g. `PC-VO-002`). |
 | `projectName` | `BilingualString` | **Yes** | Bilingual description of the execution project. |
 | `submittedDate` | `string` (ISO-8601) | **Yes** | Date the transaction log was formally dispatched to the Consultant. |
@@ -34,7 +34,6 @@ The `ProjectControlsRecord` (previously `ExecutionRecord` in raw UI models) repr
 2.  **Claim**: Financial or extension of time (EOT) recovery items submitted from ROWAD to the Client.
 3.  **Variation Order (VO)**: Scope variations impacting the main contractual amount.
 4.  **NOC (No Objection Certificate)**: Authority/Utility site access permissions.
-5.  **SPR (Subcontractor Payment Request)**: Downstream sub-agreements monthly billings.
 
 ---
 
