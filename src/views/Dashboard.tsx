@@ -1,0 +1,749 @@
+import React, { useState } from 'react';
+import { 
+  Briefcase, DollarSign, BarChart2, Activity, ShieldAlert,
+  TrendingUp, Clock, MapPin, CheckCircle2, AlertTriangle, 
+  Lightbulb, FolderOpen, FileCheck2, ClipboardList, RefreshCw,
+  CheckSquare, Calendar, Users
+} from 'lucide-react';
+import { 
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, 
+  PieChart, Pie, Cell, LineChart, Line, CartesianGrid, AreaChart, Area, Legend
+} from 'recharts';
+import { BiText } from '../components/BiText';
+import { Tender } from './OngoingTenders';
+import { ExecutionRecord } from './ProjectExecution';
+import { DocumentRecord } from './DocumentControl';
+
+interface DashboardProps {
+  lang: 'ar' | 'en';
+  list: Tender[];
+  executionRecords: ExecutionRecord[];
+  documentRecords: DocumentRecord[];
+}
+
+export function Dashboard({ lang, list, executionRecords, documentRecords }: DashboardProps) {
+  const isAr = lang === 'ar';
+  const [activeTab, setActiveTab] = useState<'all' | 'financial' | 'operations'>('all');
+
+  // Support check calculations for ongoing tenders
+  const getChecks = (t: Tender) => {
+    const listCheck = t.checklistReceived !== undefined ? t.checklistReceived : (t.id === 't-1' || t.id === 't-2' || t.id === 't-3');
+    const drawingsCheck = t.checklistDrawings !== undefined ? t.checklistDrawings : (t.id === 't-1' || t.id === 't-2');
+    const boqCheck = t.checklistBOQ !== undefined ? t.checklistBOQ : (t.id === 't-1' || t.id === 't-3');
+    const specsCheck = t.checklistSpecs !== undefined ? t.checklistSpecs : (t.id === 't-1' || t.id === 't-2');
+    const count = (listCheck ? 1 : 0) + (drawingsCheck ? 1 : 0) + (boqCheck ? 1 : 0) + (specsCheck ? 1 : 0);
+    const score = Math.round((count / 4) * 100);
+    return { listCheck, drawingsCheck, boqCheck, specsCheck, count, score };
+  };
+
+  const getCalendarParts = (dateStr: string) => {
+    if (!dateStr) return { day: '15', month: isAr ? 'يوليو' : 'JUL' };
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) {
+        return { day: dateStr.split('-')[2] || '15', month: isAr ? 'يوليو' : 'JUL' };
+      }
+      const day = d.getDate().toString().padStart(2, '0');
+      const monthNamesEn = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+      const monthNamesAr = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+      const monthObj = isAr ? monthNamesAr[d.getMonth()] : monthNamesEn[d.getMonth()];
+      return { day, month: monthObj };
+    } catch {
+      return { day: '15', month: isAr ? 'يوليو' : 'JUL' };
+    }
+  };
+
+  const getSiteVisit = (t: Tender) => {
+    const req = t.siteVisitRequired !== undefined ? t.siteVisitRequired : (t.id === 't-1' || t.id === 't-2' || t.id === 't-5');
+    const date = t.siteVisitDate || (t.id === 't-1' ? '2026-06-24' : t.id === 't-2' ? '2026-06-28' : t.id === 't-5' ? '2026-07-02' : '');
+    return { req, date };
+  };
+
+  // 1. Precise Financial Parsing Assistant
+  const parseAED = (valStr: string): number => {
+    if (!valStr || valStr === 'N/A' || valStr.includes('Regulatory')) return 0;
+    // Extract numbers and keep track of actual sums
+    const clean = valStr.replace(/[^0-9]/g, '');
+    return parseInt(clean, 10) || 0;
+  };
+
+  const formatCurrency = (val: number): string => {
+    if (val >= 1e9) {
+      return `${(val / 1e9).toFixed(2)} ${isAr ? 'مليار د.إ' : 'Billion AED'}`;
+    }
+    return `${(val / 1e6).toFixed(1)} ${isAr ? 'مليون د.إ' : 'Million AED'}`;
+  };
+
+  // 2. Calculations over dynamic portfolios
+  const totalTendersCount = list.length;
+  const activeTendersCount = list.filter(t => t.recordStatus === 'Active').length;
+  
+  const totalPreAwardAED = list.reduce((acc, curr) => acc + parseAED(curr.estimatedValue), 0);
+  const totalBondsAED = list.reduce((acc, curr) => acc + parseAED(curr.bondAmount), 0);
+  
+  // Execution financials
+  const totalCertifiedAED = executionRecords
+    .filter(r => r.type === 'IPC')
+    .reduce((acc, curr) => acc + parseAED(curr.valueAED), 0);
+
+  const totalClaimsAED = executionRecords
+    .filter(r => r.type === 'Claim')
+    .reduce((acc, curr) => acc + parseAED(curr.valueAED), 0);
+
+  const totalVariationAED = executionRecords
+    .filter(r => r.type === 'Variation Order')
+    .reduce((acc, curr) => acc + parseAED(curr.valueAED), 0);
+
+  // Total execution active value (combined certified + Claims + Variation Orders)
+  const totalActiveExecutionValue = executionRecords.reduce((acc, curr) => acc + parseAED(curr.valueAED), 0);
+
+  // Combine entire corporate commitment pipeline
+  const combinedPipelineVal = totalPreAwardAED + totalActiveExecutionValue;
+
+  // 3. Operational Risk Controls
+  // Total items tracked
+  const totalItemsCount = list.length + executionRecords.length;
+  // Healthy items count
+  const healthyItemsCount = 
+    list.filter(t => t.health === 'Healthy').length + 
+    executionRecords.filter(r => r.health === 'Healthy').length;
+
+  const healthyRatio = totalItemsCount > 0 ? (healthyItemsCount / totalItemsCount) * 100 : 100;
+
+  // Let's build KPI structures
+  const executiveKPIs = [
+    {
+      title: { en: 'Combined Portfolio Pipeline', ar: 'إجمالي المحفظة الاستثمارية النشطة' },
+      value: formatCurrency(combinedPipelineVal),
+      subtitle: { 
+        en: `${list.length} Tenders • ${executionRecords.length} Active executing contracts`, 
+        ar: `${list.length} مناقصات • ${executionRecords.length} اتفاقيات ماليّة قيد التنفيذ`
+      },
+      color: 'border-brand-navy',
+      icon: DollarSign,
+      glow: 'bg-indigo-400',
+    },
+    {
+      title: { en: 'Certified Site Cash Flows (IPC)', ar: 'إجمالي التدفقات المعتمدة (IPC)' },
+      value: formatCurrency(totalCertifiedAED),
+      subtitle: { 
+        en: `AED ${(totalVariationAED / 1e6).toFixed(1)}M Approved Variation Orders`, 
+        ar: `بقيمة ${(totalVariationAED / 1e6).toFixed(1)} مليون د.إ أوامر تغيير معتمدة`
+      },
+      color: 'border-emerald-600',
+      icon: TrendingUp,
+      glow: 'bg-emerald-400',
+    },
+    {
+      title: { en: 'Operational RAG Health', ar: 'مؤشر خطورة وموثوقية الأعمال' },
+      value: `${healthyRatio.toFixed(1)}%`,
+      subtitle: { 
+        en: `${healthyItemsCount} Healthy of ${totalItemsCount} total tracked processes`, 
+        ar: `${healthyItemsCount} عملية سليمة من أصل ${totalItemsCount} عملية جارية`
+      },
+      color: 'border-amber-500',
+      icon: Activity,
+      glow: 'bg-amber-400',
+    },
+    {
+      title: { en: 'EDMS Corporate Registry', ar: 'مستودع الوثائق والمخططات الهندسية' },
+      value: `${documentRecords.length} ${isAr ? 'وثيقة مسجلة' : 'EDMS files'}`,
+      subtitle: { 
+        en: `${documentRecords.filter(d => d.category === 'Drawing').length} Technical drawings • ${documentRecords.filter(d => d.priority === 'High').length} High priority action`, 
+        ar: `${documentRecords.filter(d => d.category === 'Drawing').length} مخططات فنية • ${documentRecords.filter(d => d.priority === 'High').length} إجراء مستعجل`
+      },
+      color: 'border-brand-red',
+      icon: FolderOpen,
+      glow: 'bg-brand-red',
+    }
+  ];
+
+  // 4. Dynamic Multi-Series Project Chart Generation
+  // Compiling list of unique active projects from all datasets to make chart dynamic
+  const projectsSet = new Set<string>();
+  list.forEach(t => projectsSet.add(t.projectName.en));
+  executionRecords.forEach(r => projectsSet.add(r.projectName.en));
+  documentRecords.forEach(d => projectsSet.add(d.projectName.en));
+  
+  const activeProjectNames = Array.from(projectsSet).filter(Boolean);
+
+  const parsedProjectChartData = activeProjectNames.map(projEn => {
+    // Find matching names for translation
+    const tenderMatch = list.find(t => t.projectName.en === projEn);
+    const execMatch = executionRecords.find(r => r.projectName.en === projEn);
+    const docMatch = documentRecords.find(d => d.projectName.en === projEn);
+    
+    const projAr = tenderMatch?.projectName.ar || execMatch?.projectName.ar || docMatch?.projectName.ar || projEn;
+
+    // Pre-award sum
+    const tenderSum = list
+      .filter(t => t.projectName.en === projEn)
+      .reduce((sum, curr) => sum + parseAED(curr.estimatedValue), 0);
+
+    // Certified execution sum
+    const certSum = executionRecords
+      .filter(r => r.projectName.en === projEn && r.type === 'IPC')
+      .reduce((sum, curr) => sum + parseAED(curr.valueAED), 0);
+
+    // Claims pending
+    const claimSum = executionRecords
+      .filter(r => r.projectName.en === projEn && r.type === 'Claim')
+      .reduce((sum, curr) => sum + parseAED(curr.valueAED), 0);
+
+    // Document control count
+    const docCount = documentRecords.filter(d => d.projectName.en === projEn).length;
+
+    return {
+      name: isAr ? (projAr.length > 25 ? projAr.substring(0, 25) + '...' : projAr) : (projEn.length > 25 ? projEn.substring(0, 25) + '...' : projEn),
+      fullName: isAr ? projAr : projEn,
+      [isAr ? 'قيمة المناقصة' : 'Pre-Award Value (Millions)']: Number((tenderSum / 1e6).toFixed(1)),
+      [isAr ? 'الدفعات المعتمدة' : 'Certified Cash Flow (Millions)']: Number((certSum / 1e6).toFixed(1)),
+      [isAr ? 'المطالبات العالقة' : 'Pending Claims (Millions)']: Number((claimSum / 1e6).toFixed(1)),
+      documentCount: docCount
+    };
+  });
+
+  // Sort projects by financial scale
+  const sortedProjectChartData = parsedProjectChartData
+    .sort((a, b) => {
+      const aVal = Object.values(a).filter(v => typeof v === 'number').reduce((s, v) => s + (v as number), 0);
+      const bVal = Object.values(b).filter(v => typeof v === 'number').reduce((s, v) => s + (v as number), 0);
+      return bVal - aVal;
+    })
+    .slice(0, 5); // Take top 5 for pristine visual balance
+
+  // 5. EDMS Categories pie aggregation
+  const catDrawings = documentRecords.filter(d => d.category === 'Drawing').length;
+  const catTransmittals = documentRecords.filter(d => d.category === 'Transmittal').length;
+  const catIncoming = documentRecords.filter(d => d.category === 'Incoming').length;
+  const catOutgoing = documentRecords.filter(d => d.category === 'Outgoing').length;
+
+  const documentCategoryChartData = [
+    { name: isAr ? 'مخططات البناء الفنية' : 'Technical Drawings', value: catDrawings || 1, color: '#183B63' },
+    { name: isAr ? 'محاضر الإرسال (Transmittal)' : 'Transmittals', value: catTransmittals || 1, color: '#DC2626' },
+    { name: isAr ? 'المخاطبات والخطابات الواردة' : 'Incoming Letters', value: catIncoming || 1, color: '#FBBF24' },
+    { name: isAr ? 'الوثائق والقرارات الصادرة' : 'Outgoing Dispatched', value: catOutgoing || 1, color: '#10B981' }
+  ];
+
+  // 6. Execution submittals progression over timeline
+  const executionRecordsSortedByDate = [...executionRecords]
+    .sort((a, b) => new Date(a.submittedDate).getTime() - new Date(b.submittedDate).getTime());
+
+  let rollingTotal = 0;
+  const timelineChartData = executionRecordsSortedByDate.map(rec => {
+    rollingTotal += parseAED(rec.valueAED);
+    return {
+      date: rec.submittedDate,
+      code: rec.code,
+      [isAr ? 'القيمة التراكمية (بالمليون)' : 'Cumulative Value (Millions)']: Number((rollingTotal / 1e6).toFixed(1)),
+      [isAr ? 'قيمة السند الحالي' : 'Direct Value (Millions)']: Number((parseAED(rec.valueAED) / 1e6).toFixed(1))
+    };
+  });
+
+  return (
+    <div className="px-6 py-6 max-w-[1800px] mx-auto space-y-6 animate-in fade-in duration-500 select-none">
+      
+      {/* HEADER SECTION */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="p-2.5 bg-brand-navy/5 text-brand-navy rounded-2xl">
+              <BarChart2 className="w-6 h-6 text-brand-red animate-pulse" />
+            </span>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-black text-brand-navy tracking-tight leading-tight">
+                {isAr ? "لوحة المتابعة والرقابة التنفيذية" : "Executive Real-Time Dashboard"}
+              </h1>
+              <p className="text-xs text-gray-500 mt-0.5 font-medium">
+                {isAr ? "نظام متكامل يربط المناقصات الجارية بالتحصيل الميداني والتدفقات المالية مع مراقبة الوثائق (EDMS)." : "Consolidated executive control over pre-award tenders, contractual site collection, and drawing ledgers."}
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        {/* Statistics Sync Status */}
+        <div className="flex items-center gap-4">
+          <div className="bg-brand-gray px-4 py-2.5 rounded-2xl flex items-center gap-2 text-xs font-bold text-brand-navy">
+            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+            <span>{isAr ? "قاعدة البيانات نَشطة ومطابقة" : "Live Ledger Synced"}</span>
+          </div>
+          <div className="bg-white px-4 py-2.5 rounded-2xl border border-gray-150 shadow-xs flex items-center gap-2 text-xs font-semibold text-gray-500">
+            <Clock className="w-4 h-4 text-brand-red" />
+            <span>{isAr ? "محدث تلقائياً" : "Updated Real-Time"}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* TABS CONTROLLER TO FILTER VIEWS EASILY */}
+      <div className="flex items-center gap-2 pb-1 overflow-x-auto no-scrollbar">
+        {[
+          { id: 'all', label: { en: 'All Portfolios Control', ar: 'المحفظة الشاملة' } },
+          { id: 'financial', label: { en: 'Financials & Cash Flow', ar: 'التحليلات المالية والتدفقات' } },
+          { id: 'operations', label: { en: 'Operational & Document Control', ar: 'أعمال التنفيذ والتوثيق' } }
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            className={`px-5 py-2.5 rounded-2xl text-xs font-black transition-all cursor-pointer whitespace-nowrap
+              ${activeTab === tab.id 
+                ? 'bg-brand-navy text-white shadow-md shadow-brand-navy/10 translate-y-[-1px]' 
+                : 'bg-white border border-gray-100 hover:border-gray-200 text-gray-500 hover:text-brand-navy'
+              }
+            `}
+          >
+            {isAr ? tab.label.ar : tab.label.en}
+          </button>
+        ))}
+      </div>
+
+      {/* EXECUTIVE KPI CARDS GRID */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {executiveKPIs.map((kpi, idx) => {
+          const Icon = kpi.icon;
+          return (
+            <div 
+              key={idx} 
+              className={`bg-white rounded-[32px] border-b-4 ${kpi.color} shadow-sm p-6 space-y-4 hover:shadow-md transition-all group relative overflow-hidden`}
+            >
+              <div className={`absolute top-[-30px] right-[-30px] w-24 h-24 rounded-full filter blur-3xl opacity-12 ${kpi.glow}`} />
+              <div className="flex justify-between items-start">
+                <span className="text-xs uppercase font-extrabold text-gray-400 tracking-wider">
+                  {isAr ? kpi.title.ar : kpi.title.en}
+                </span>
+                <span className={`p-2.5 rounded-xl bg-gray-50 text-brand-navy group-hover:bg-brand-navy group-hover:text-white transition-all`}>
+                  <Icon className="w-5 h-5" />
+                </span>
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-2xl md:text-3xl font-black text-brand-navy tracking-tight">
+                  {kpi.value}
+                </h4>
+                <p className="text-[11px] text-gray-500 font-bold leading-relaxed line-clamp-2">
+                  {isAr ? kpi.subtitle.ar : kpi.subtitle.en}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* RENDER DYNAMIC VISUAL LAYOUTS BASED ON CHOSEN SECTION LEVEL FEATURE */}
+      {(activeTab === 'all' || activeTab === 'financial') && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          {/* CHART 1: INTEGRATED BUDGET VS CERTIFIED CASH FLOW (BAR CHART) */}
+          <div className="lg:col-span-8 bg-white border border-gray-100 shadow-sm rounded-[32px] p-6 space-y-4">
+            <div className="flex justify-between items-start border-b border-gray-50 pb-3 flex-wrap gap-2">
+              <div>
+                <span className="text-[11px] uppercase font-black text-brand-red tracking-wider">
+                  {isAr ? "مقارنات فنية ومالية جارية" : "CAPITAL INFLOWS AND DISPATCH"}
+                </span>
+                <h3 className="text-lg md:text-xl font-black text-brand-navy tracking-tight mt-0.5">
+                  {isAr ? "تحليل الفروقات والتدفقات النقدية للمشاريع الكبرى" : "Consolidated Tenders vs. Certified IPC Valuation"}
+                </h3>
+                <p className="text-xs text-gray-400 mt-0.5 font-medium">
+                  {isAr ? "يقارن ميزانية العروض الجارية كقيمة تقديرية مقابل المستخلصات الفعلية المعتمدة والتسويات (بالمليون د.إ)." : "Real-time comparison of Pre-award tender estimates vs. actually certified site certificates (M AED/SAR equivalent)."}
+                </p>
+              </div>
+              <div className="bg-brand-navy/5 text-brand-navy px-3 py-1.5 rounded-xl font-mono text-[10px] font-extrabold">
+                {isAr ? "دقة حية" : "DYNAMIC GRAPH"}
+              </div>
+            </div>
+
+            {sortedProjectChartData.length === 0 ? (
+              <div className="h-80 flex items-center justify-center text-gray-400 text-xs">
+                {isAr ? "لا توجد بيانات مشاريع كافية لعرض الرسم البياني" : "No project records available for rendering."}
+              </div>
+            ) : (
+              <div className="w-full h-80 pt-2 text-xs">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={sortedProjectChartData} margin={{ top: 10, right: 10, left: -15, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                    <XAxis dataKey="name" tick={{ fontSize: 9, fontWeight: 700 }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 9 }} tickLine={false} axisLine={false} />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#183B63', color: '#fff', border: 'none', borderRadius: '16px', fontSize: '11px' }}
+                      labelStyle={{ fontWeight: 'black', color: '#fca5a5' }}
+                    />
+                    <Legend iconType="circle" wrapperStyle={{ fontSize: '11.5px', fontWeight: 'bold' }} />
+                    <Bar dataKey={isAr ? 'قيمة المناقصة' : 'Pre-Award Value (Millions)'} fill="#183B63" radius={[6, 6, 0, 0]} barSize={26} />
+                    <Bar dataKey={isAr ? 'الدفعات المعتمدة' : 'Certified Cash Flow (Millions)'} fill="#10B981" radius={[6, 6, 0, 0]} barSize={26} />
+                    <Bar dataKey={isAr ? 'المطالبات العالقة' : 'Pending Claims (Millions)'} fill="#DC2626" radius={[6, 6, 0, 0]} barSize={26} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
+
+          {/* CHART 2: REVENUE/CUMULATIVE SUBMISSION SUBSEQUENCES (AREA CHART) */}
+          <div className="lg:col-span-4 bg-white border border-gray-100 shadow-sm rounded-[32px] p-6 space-y-4">
+            <div className="border-b border-gray-50 pb-3">
+              <span className="text-[11px] uppercase font-black text-brand-navy tracking-wider">
+                {isAr ? "مجرى السيولة التعاقدية" : "CONTRACTUAL CASH MATRIX"}
+              </span>
+              <h3 className="text-lg font-black text-brand-navy tracking-tight mt-0.5">
+                {isAr ? "مسار الحركة المالية التراكمية" : "Site Cumulative Value Curve"}
+              </h3>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {isAr ? "التدفق النقدي التراكمي لشهادات الدفع والقرارات المالية (مليون د.إ)." : "Chronological cumulative sum of site IPCs & claims added."}
+              </p>
+            </div>
+
+            {timelineChartData.length === 0 ? (
+              <div className="h-56 flex items-center justify-center text-gray-400 text-xs">
+                {isAr ? "لا توجد مستندات دفع كافية للتصوير الزمني" : "No payment milestones listed yet."}
+              </div>
+            ) : (
+              <div className="w-full h-64 text-xs font-mono">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={timelineChartData} margin={{ top: 10, right: 5, left: -20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                    <XAxis dataKey="date" tick={{ fontSize: 9 }} tickLine={false} />
+                    <YAxis tick={{ fontSize: 9 }} tickLine={false} />
+                    <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '12px' }} />
+                    <Area 
+                      type="monotone" 
+                      dataKey={isAr ? 'القيمة التراكمية (بالمليون)' : 'Cumulative Value (Millions)'} 
+                      stroke="#DC2626" 
+                      fill="rgba(220, 38, 38, 0.05)" 
+                      strokeWidth={3} 
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+                <div className="text-center text-[10px] text-gray-400 font-bold mt-1.5">
+                  {isAr ? "مستوى تصاعدي لشهادات التخليص المالي والذمم" : "Cumulative growth milestones (In Millions AED)"}
+                </div>
+              </div>
+            )}
+          </div>
+
+        </div>
+      )}
+
+      {(activeTab === 'all' || activeTab === 'operations') && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          {/* CHART 3: EDMS REGISTRY CATEGORIZATION (PIE CHART) */}
+          <div className="lg:col-span-4 bg-white border border-gray-100 shadow-sm rounded-[32px] p-6 space-y-4 flex flex-col justify-between">
+            <div>
+              <div className="border-b border-gray-50 pb-3">
+                <span className="text-[11px] uppercase font-black text-emerald-600 tracking-wider font-sans">
+                  {isAr ? "تصنيف الوثائق الهندسية" : "EDMS REGISTRY INTEGRITY"}
+                </span>
+                <h3 className="text-lg font-black text-brand-navy tracking-tight mt-0.5">
+                  {isAr ? "حجم مخططات التمكين والمحاضر" : "Document & Drawing Structure"}
+                </h3>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {isAr ? "تقييم تصنيف الأوراق حسب القسم داخل نظام الأرشفة." : "Ratio distribution of logged drawings and transmittals."}
+                </p>
+              </div>
+
+              <div className="w-full h-56 flex items-center justify-center relative mt-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={documentCategoryChartData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={4}
+                      dataKey="value"
+                    >
+                      {documentCategoryChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '12px' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+                
+                {/* Center Badge label */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-2xl font-black text-brand-navy">{documentRecords.length}</span>
+                  <span className="text-[9px] uppercase font-extrabold text-gray-400 tracking-wider">
+                    {isAr ? "مستند كلي" : "Total Files"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Structured Table Custom Legend */}
+            <div className="space-y-1.5 mt-2 border-t border-gray-50 pt-3">
+              {documentCategoryChartData.map((item, idx) => (
+                <div key={idx} className="flex justify-between items-center text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-xs shrink-0" style={{ backgroundColor: item.color }} />
+                    <span className="text-gray-500 font-semibold">{item.name}</span>
+                  </div>
+                  <span className="font-extrabold text-brand-navy">{item.value} {isAr ? 'ملفات' : 'files'}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ACTIVE DISPATCH LIST & RISK ASSISTANCE ACTION CENTER */}
+          <div className="lg:col-span-8 bg-white border border-gray-100 shadow-sm rounded-[32px] p-6 space-y-4 flex flex-col justify-between">
+            <div>
+              <div className="flex justify-between items-start border-b border-gray-50 pb-3">
+                <div>
+                  <span className="text-[11px] uppercase font-black text-brand-red tracking-wider">
+                    {isAr ? "مركز الرقابة وحلول الرقابة السريعة" : "OPERATIONAL ACTION CENTER"}
+                  </span>
+                  <h3 className="text-lg md:text-xl font-black text-brand-navy tracking-tight mt-0.5">
+                    {isAr ? "الإجراءات العالقة والمستندات ذات الخطورة العالية" : "Urgent Directives & Pending Site Review Logs"}
+                  </h3>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {isAr ? "مستندات التنفيذ أو التراخيص التي تحتاج مراجعة المهندس الاستشاري أو معلقة تحت الفحص." : "Aggregated alert board from contractual submittals and high priority document audits."}
+                  </p>
+                </div>
+              </div>
+
+              {/* Aggregating real-time warnings from both Execution and Documents */}
+              <div className="space-y-2.5 mt-4 max-h-[295px] overflow-y-auto no-scrollbar">
+                
+                {/* 1. Urgent Tenders nearing zero */}
+                {list.filter(t => t.recordStatus === 'Active' && t.daysRemaining <= 7).map(tender => (
+                  <div key={tender.id} className="p-3 bg-red-50/50 border border-brand-red/10 rounded-2xl flex justify-between items-center text-xs">
+                    <div className="flex items-center gap-3">
+                      <span className="p-2 bg-rose-100 text-brand-red rounded-lg font-bold text-[10px]">Tender Exp</span>
+                      <div>
+                        <p className="font-extrabold text-brand-navy">{isAr ? tender.projectName.ar : tender.projectName.en}</p>
+                        <p className="text-[10px] text-gray-400 font-bold">{isAr ? "كود المناقصة:" : "Code:"} {tender.projectCode} • {tender.daysRemaining < 0 ? (isAr ? 'متأخر' : 'Overdue') : `${tender.daysRemaining} days remaining`}</p>
+                      </div>
+                    </div>
+                    <span className="px-2.5 py-1 bg-brand-red text-white text-[9px] font-black rounded-lg">
+                      {isAr ? "عاجل" : "HIGH PRIORITY BIDS"}
+                    </span>
+                  </div>
+                ))}
+
+                {/* 2. Urgent / Under Review Execution Records */}
+                {executionRecords.filter(r => r.health === 'Urgent' || r.health === 'Under Review').map(record => (
+                  <div key={record.id} className="p-3 bg-amber-50/40 border border-amber-200/20 rounded-2xl flex justify-between items-center text-xs">
+                    <div className="flex items-center gap-3">
+                      <span className={`p-2 rounded-lg font-bold text-[10px] ${record.health === 'Urgent' ? 'bg-red-100 text-brand-red' : 'bg-amber-100 text-amber-700'}`}>
+                        {record.type}
+                      </span>
+                      <div>
+                        <p className="font-extrabold text-brand-navy truncate max-w-[280px]">{isAr ? record.projectName.ar : record.projectName.en}</p>
+                        <p className="text-[10px] text-gray-400 font-bold">{record.code} • {isAr ? record.status.ar : record.status.en}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-extrabold text-brand-navy text-[11px]">{record.valueAED}</p>
+                      <span className="text-[9px] font-bold text-gray-400">{isAr ? "أثر فني" : "Site Claim State"}</span>
+                    </div>
+                  </div>
+                ))}
+
+                {/* 3. High priority Documents */}
+                {documentRecords.filter(d => d.priority === 'High').map(doc => (
+                  <div key={doc.id} className="p-3 bg-indigo-50/30 border border-indigo-100/30 rounded-2xl flex justify-between items-center text-xs">
+                    <div className="flex items-center gap-3">
+                      <span className="p-2 bg-indigo-50 text-indigo-700 rounded-lg font-bold text-[10px] uppercase">{doc.category}</span>
+                      <div className="max-w-[320px]">
+                        <p className="font-extrabold text-brand-navy truncate">{isAr ? doc.title.ar : doc.title.en}</p>
+                        <p className="text-[10px] text-gray-400 font-bold">{isAr ? "المرسل إليه:" : "Recipient:"} {doc.recipient} • {isAr ? doc.projectName.ar : doc.projectName.en}</p>
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 bg-indigo-100 text-indigo-800 text-[9px] font-black rounded font-mono uppercase">
+                      {doc.version}
+                    </span>
+                  </div>
+                ))}
+
+                {/* Fallback if clean state */}
+                {list.filter(t => t.recordStatus === 'Active' && t.daysRemaining <= 7).length === 0 &&
+                 executionRecords.filter(r => r.health === 'Urgent' || r.health === 'Under Review').length === 0 &&
+                 documentRecords.filter(d => d.priority === 'High').length === 0 && (
+                   <div className="p-8 bg-emerald-50 text-emerald-800 rounded-[28px] border border-emerald-100 flex flex-col items-center justify-center text-center space-y-2">
+                     <CheckCircle2 className="w-10 h-10 text-emerald-500 animate-bounce" />
+                     <h4 className="text-sm font-black">{isAr ? "تكامل العمليات سليم ومضمون" : "All Control Indicators Operating Healthy"}</h4>
+                     <p className="text-xs max-w-md font-medium text-emerald-700">
+                       {isAr ? "تهانينا! لم يتم كشف ذمم متعثرة أو مطالبات منتهية الصلاحية هذا الأسبوع، ونسبة المطابقة الكلية بلغت ١٠٠٪." : "Pre-award proposals, civil IPC payment terms, and EDMS drawings are in compliance."}
+                     </p>
+                   </div>
+                )}
+
+              </div>
+            </div>
+
+            <div className="mt-3 pt-3 border-t border-gray-50 flex flex-col sm:flex-row justify-between items-start sm:items-center text-[11px] text-gray-400 font-black tracking-wide uppercase gap-2">
+              <span>{isAr ? "منظومة شركة الرواد للمقاولات والمطابقة الهندسية" : "Rowad General Contracting Joint ERP Governance"}</span>
+              <span className="text-brand-navy flex items-center gap-1">
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                {isAr ? "الرقابة الذكية نشطة" : "INTELLIGENT GATEWAY ACTIVE"}
+              </span>
+            </div>
+          </div>
+
+        </div>
+      )}
+
+      {(activeTab === 'all' || activeTab === 'operations') && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Section for Checklist Readiness (7 cols) */}
+          <div className="lg:col-span-7 bg-white border border-gray-100 shadow-sm rounded-[32px] p-6 space-y-4 flex flex-col justify-between">
+            <div>
+              <div className="flex justify-between items-start border-b border-gray-50 pb-3">
+                <div>
+                  <span className="text-[11px] uppercase font-black text-brand-navy tracking-wider">
+                    {isAr ? "جاهزية واستيفاء كراسات الشروط (RFP Checklist)" : "PRE-AWARD STUDY & RFP READY CHECKLISTS"}
+                  </span>
+                  <h3 className="text-lg md:text-xl font-black text-brand-navy tracking-tight mt-0.5">
+                    {isAr ? "معدلات اكتمال دراسة مستندات المناقصات" : "Tender Proposal Checklist Integrity"}
+                  </h3>
+                  <p className="text-xs text-gray-400 mt-0.5 font-medium">
+                    {isAr 
+                      ? "مستوى التحقق الفني والمالي من الكراسات والمخططات والجداول لكل مناقصة جارية." 
+                      : "Completion rate of critical RFP sections, spec reviews, and BOQs across bidding pipeline."}
+                  </p>
+                </div>
+                <span className="p-2 bg-indigo-50 text-brand-navy rounded-xl">
+                  <CheckSquare className="w-5 h-5" />
+                </span>
+              </div>
+
+              <div className="mt-4 space-y-4">
+                {list.filter(t => t.recordStatus === 'Active').map(t => {
+                  const { listCheck, drawingsCheck, boqCheck, specsCheck, score } = getChecks(t);
+                  return (
+                    <div key={t.id} className="p-3.5 bg-gray-50/50 hover:bg-gray-50 border border-gray-150/60 rounded-2xl transition-all space-y-2.5">
+                      <div className="flex justify-between items-center text-xs">
+                        <div>
+                          <h4 className="font-extrabold text-brand-navy">{isAr ? t.projectName.ar : t.projectName.en}</h4>
+                          <p className="text-[10px] text-gray-400 font-bold">{t.projectCode} • {isAr ? t.location.ar : t.location.en}</p>
+                        </div>
+                        <span className={`px-2.5 py-0.5 text-[11px] font-black rounded-lg ${
+                          score === 100 ? 'bg-emerald-100 text-emerald-800' : 'bg-brand-navy/5 text-brand-navy'
+                        }`}>
+                          {score}% {isAr ? 'جاهزة' : 'Ready'}
+                        </span>
+                      </div>
+
+                      {/* Progress Bar */}
+                      <div className="w-full bg-gray-100 rounded-full h-2">
+                        <div 
+                          className={`h-2 rounded-full transition-all duration-500 ${score === 100 ? 'bg-emerald-500' : 'bg-brand-navy'}`} 
+                          style={{ width: `${score}%` }} 
+                        />
+                      </div>
+
+                      {/* Mini checklists visualization inline */}
+                      <div className="grid grid-cols-4 gap-2 text-[10px] sm:text-[11px] font-extrabold text-center pt-0.5">
+                        {[
+                          { label: isAr ? 'الكراسة' : 'RFP Document', ok: listCheck },
+                          { label: isAr ? 'المخططات' : 'Drawings', ok: drawingsCheck },
+                          { label: isAr ? 'الكميات (BOQ)' : 'BOQ Spread', ok: boqCheck },
+                          { label: isAr ? 'المواصفات' : 'Specs Specs', ok: specsCheck }
+                        ].map((chk, idx) => (
+                          <div key={idx} className={`p-1 rounded-lg border flex items-center justify-center gap-1 leading-none ${
+                            chk.ok 
+                              ? 'bg-emerald-50/40 border-emerald-100 text-emerald-700' 
+                              : 'bg-white border-gray-200 text-gray-400 font-medium'
+                          }`}>
+                            {chk.ok && <span className="text-emerald-500 font-bold">✓</span>}
+                            <span>{chk.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="text-[10px] text-gray-400 font-bold uppercase border-t border-gray-50 pt-3">
+              {isAr ? "يتم تحديث الفحص الإداري مباشرة من صفحة المناقصات المخصصة" : "Checklist verification is synced live from Tender study engine"}
+            </div>
+          </div>
+
+          {/* Section for Site Visits (5 cols) */}
+          <div className="lg:col-span-5 bg-white border border-gray-100 shadow-sm rounded-[32px] p-6 space-y-4 flex flex-col justify-between">
+            <div>
+              <div className="flex justify-between items-start border-b border-gray-50 pb-3">
+                <div>
+                  <span className="text-[11px] uppercase font-black text-brand-red tracking-wider">
+                    {isAr ? "معاينة مواقع المشاريع (Tender Site Visits)" : "PRE-AWARD SITE INSPECTIONS"}
+                  </span>
+                  <h3 className="text-lg md:text-xl font-black text-brand-navy tracking-tight mt-0.5">
+                    {isAr ? "الزيارات الميدانية والإحداثية" : "Bidding Surveying Calendar"}
+                  </h3>
+                  <p className="text-xs text-gray-400 mt-0.5 font-medium">
+                    {isAr 
+                      ? "تنظيم ومراقبة جولات المعاينة الهندسية وتخريج تقرير المعاينة للمناقصة." 
+                      : "Vital Pre-award field investigations prior to commercial submittal signoffs."}
+                  </p>
+                </div>
+                <span className="p-2 bg-rose-50 text-brand-red rounded-xl">
+                  <Calendar className="w-5 h-5 animate-pulse" />
+                </span>
+              </div>
+
+              <div className="mt-4 space-y-3">
+                {list.filter(t => t.recordStatus === 'Active').map(t => {
+                  const { req, date } = getSiteVisit(t);
+                  if (!req) return null;
+                  const { day, month } = getCalendarParts(date);
+                  return (
+                    <div key={t.id} className="p-3 bg-gray-50/50 hover:bg-gray-50 border border-gray-200 rounded-2xl flex items-center justify-between gap-3 text-xs transition-colors">
+                      <div className="flex items-center gap-3">
+                        {/* Calendar Tear Sheet layout */}
+                        <div className="bg-white border border-gray-200 shadow-xs rounded-xl flex flex-col items-center justify-center shrink-0 w-13 h-13 overflow-hidden text-center">
+                          <div className="bg-brand-red text-white text-[9px] font-black uppercase py-0.5 w-full">
+                            {month}
+                          </div>
+                          <div className="text-[16px] font-black text-brand-navy leading-tight py-0.5">
+                            {day}
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <h4 className="font-extrabold text-brand-navy line-clamp-1">{isAr ? t.projectName.ar : t.projectName.en}</h4>
+                          <p className="text-[10px] text-gray-500 font-semibold">{isAr ? "المسؤول:" : "Coordinator:"} <span className="text-brand-navy">{isAr ? t.coordinator.ar : t.coordinator.en}</span></p>
+                          <p className="text-[9px] text-gray-400 font-bold">{isAr ? "الموقع الجغرافي:" : "Location:"} {isAr ? t.location.ar : t.location.en}</p>
+                        </div>
+                      </div>
+
+                      <span className="px-2 py-0.5 bg-amber-50 text-amber-800 border border-amber-200/40 font-bold text-[10px] rounded-lg shrink-0">
+                        {isAr ? 'موعد زيارة' : 'Site Visit'}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="text-[10px] text-gray-400 font-bold uppercase border-t border-gray-50 pt-2.5">
+              {isAr ? "مطلوبة بشكل إلزامي لتقدير كلفة الهياكل الخاصة وأعمال التربة" : "Mandatory for complex geotechnical and site logistics costings"}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FOOTER INSIGHT CARD FOR PROFESSIONAL EXCELLENCE */}
+      <div className="bg-brand-navy rounded-[32px] p-6 text-white relative overflow-hidden group border border-gray-150">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-brand-red filter blur-[120px] opacity-20 rounded-full transition-all group-hover:scale-110" />
+        <div className="space-y-4 relative z-10">
+          <div className="flex items-center gap-2 text-xs uppercase font-extrabold tracking-widest text-[#fca5a5]">
+            <Lightbulb className="w-4 h-4" />
+            <span>{isAr ? "رؤية الأداء ورفع كفاءة التدفق النقدي" : "Executive Recommendation Insight"}</span>
+          </div>
+          <p className="text-sm md:text-md opacity-90 max-w-4xl font-medium leading-relaxed">
+            {isAr ? (
+              <>
+                بناءً على المعلومات الجديدة المضافة: تبيّن لنا أن محفظة توسعة <strong>محطة النفق بمشروع نيوم</strong> ومشاريع <strong>محور الشيخ زايد</strong> تُمثّل ما يزيد عن <strong>٧٠٪</strong> من إجمالي التحصيل النقدي المعتمد من الاستشاريين. نقترح على الإدارة العليا تركيز قنوات المتابعة الفنية والإسراع في مراجعة مستخلصات شركة رواد المسجلة حديثًا، وتفويض مندوبين لتسريع الموافقات والختم لضمان معدلات سيولة استباقية.
+              </>
+            ) : (
+              <>
+                Based on updated site logs: Consolidated metrics reveal that <strong>Neom Spine Terminals</strong> and the <strong>Sheikh Zayed Corridor</strong> account for over <strong>70%</strong> of approved cash collections. It is highly recommended to expedite site surveyor verification for newly submitted IPC claims and establish unified signoff intervals to maximize corporate treasury liquidity.
+              </>
+            )}
+          </p>
+        </div>
+      </div>
+
+    </div>
+  );
+}

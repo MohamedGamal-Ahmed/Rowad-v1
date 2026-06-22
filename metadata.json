@@ -1,0 +1,6 @@
+{
+  "name": "Pre-Award Tender Management System",
+  "description": "Modern pre-award tender and contract management SaaS platform with ongoing workspace, Arabic & English support and interactive executive dashboards.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

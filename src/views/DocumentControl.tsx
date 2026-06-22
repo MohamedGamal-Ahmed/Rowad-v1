@@ -1,0 +1,679 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Folder, FilePlus2, FileType, Search, Filter, LayoutGrid, 
+  ListFilter, Eye, CheckCircle2, AlertCircle, X, Download, Plus,
+  FileCheck2, CheckSquare, History, FileText
+} from 'lucide-react';
+import { BiText } from '../components/BiText';
+
+export interface DocumentRecord {
+  id: string;
+  code: string;
+  title: { en: string; ar: string };
+  category: 'Incoming' | 'Outgoing' | 'Drawing' | 'Transmittal';
+  projectName: { en: string; ar: string };
+  sender: string;
+  recipient: string;
+  dateReceived: string;
+  status: { en: string; ar: string };
+  priority: 'High' | 'Medium' | 'Low';
+  version: string;
+}
+
+export const mockDocuments: DocumentRecord[] = [
+  {
+    id: 'D-001',
+    code: 'ROWAD-NEOM-CIV-DRW-042',
+    title: { en: 'Slab reinforcement details at station 3+400', ar: 'تفاصيل تسليح البلاطة الخرسانية عند المحطة ٣+٤٠٠' },
+    category: 'Drawing',
+    projectName: { en: 'Neom Spine Ground Terminal Expansion', ar: 'توسعة محطة النفق الأرضية بمشروع نيوم' },
+    sender: 'Rowad Civil Design Team',
+    recipient: 'Lead Construction Consultant',
+    dateReceived: '2026-06-19',
+    status: { en: 'Approved for Construction', ar: 'معتمد للتنفيذ' },
+    priority: 'High',
+    version: 'Rev 2.0'
+  },
+  {
+    id: 'D-002',
+    code: 'TRN-DIR-8812',
+    title: { en: 'Transmittal of Soil compaction test reports', ar: 'محضر إرسال تقارير اختبارات دك التربة' },
+    category: 'Transmittal',
+    projectName: { en: 'البنية التحتية لمنطقة بوليفارد الدرعية التاريخية', ar: 'البنية التحتية لمنطقة بوليفارد الدرعية التاريخية' },
+    sender: 'SGS Soils Laboratory LLC',
+    recipient: 'Rowad QA/QC Department',
+    dateReceived: '2026-06-20',
+    status: { en: 'Under Verification', ar: 'تحت التدقيق والمطابقة' },
+    priority: 'Medium',
+    version: 'Rev 1.0'
+  },
+  {
+    id: 'D-003',
+    code: 'INC-MUNI-0994',
+    title: { en: 'Municipality site access and load permit letter', ar: 'خطاب البلدية بشأن تصريح الدخول ومطابقة الحمولات' },
+    category: 'Incoming',
+    projectName: { en: 'Cairo Capital East Logistics Hub', ar: 'المركز اللوجستي لشرق العاصمة الإدارية' },
+    sender: 'Cairo Urban Development Authority',
+    recipient: 'Rowad Project Director',
+    dateReceived: '2026-06-14',
+    status: { en: 'Awaiting Response Letter', ar: 'بانتظار خطاب الرد والتعليق' },
+    priority: 'High',
+    version: 'Original'
+  },
+  {
+    id: 'D-004',
+    code: 'OUT-EXP-ROWG-771',
+    title: { en: 'Notice of major structural excavation clearance', ar: 'إخطار رسمي بانتهاء أعمال الحفر الهيكلي الرئيسي' },
+    category: 'Outgoing',
+    projectName: { en: 'Al Maktoum Terminal Cargo Ramp', ar: 'مدرج الشحن بمطار آل مكتوم الدولي الجديد' },
+    sender: 'Rowad HSE Manager',
+    recipient: 'General Civil Aviation Authority',
+    dateReceived: '2026-06-18',
+    status: { en: 'Delivered & Stamped', ar: 'تم التسليم والختم بالوارد' },
+    priority: 'Medium',
+    version: 'Rev 1.1'
+  }
+];
+
+export function DocumentControl({ 
+  lang, 
+  documents, 
+  onUpdateDocuments 
+}: { 
+  lang: 'ar' | 'en'; 
+  documents: DocumentRecord[]; 
+  onUpdateDocuments: React.Dispatch<React.SetStateAction<DocumentRecord[]>>;
+}) {
+  const isAr = lang === 'ar';
+  const setDocuments = onUpdateDocuments;
+  const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [selectedDocId, setSelectedDocId] = useState<string | null>('D-001');
+
+  // Submittal registration form state
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [category, setCategory] = useState<'Incoming' | 'Outgoing' | 'Drawing' | 'Transmittal'>('Drawing');
+  const [code, setCode] = useState('');
+  const [titleEn, setTitleEn] = useState('');
+  const [titleAr, setTitleAr] = useState('');
+  const [projectNameEn, setProjectNameEn] = useState('');
+  const [projectNameAr, setProjectNameAr] = useState('');
+  const [sender, setSender] = useState('');
+  const [recipient, setRecipient] = useState('');
+  const [statusEn, setStatusEn] = useState('');
+  const [statusAr, setStatusAr] = useState('');
+  const [priority, setPriority] = useState<'High' | 'Medium' | 'Low'>('Medium');
+  const [version, setVersion] = useState('Rev 1.0');
+
+  // Interactive autofill based on Category
+  useEffect(() => {
+    if (isAddModalOpen) {
+      const nextNum = documents.length + 1;
+      if (category === 'Drawing') {
+        setCode(`ROWAD-NEOM-CIV-DRW-0${nextNum}2`);
+        setSender('Rowad Civil Design Team');
+        setRecipient('Lead Construction Consultant');
+        setStatusEn('Approved for Construction');
+        setStatusAr('معتمد للتنفيذ ومطابق للمواصفات الهيكلية');
+        setPriority('High');
+        setVersion('Rev 1.0');
+      } else if (category === 'Transmittal') {
+        setCode(`TRN-DIR-88${nextNum}`);
+        setSender('SGS Soils Laboratory LLC');
+        setRecipient('Rowad QA/QC Department');
+        setStatusEn('Under Verification');
+        setStatusAr('تحت التدقيق والمطابقة الهندسية');
+        setPriority('Medium');
+        setVersion('Rev 1.0');
+      } else if (category === 'Incoming') {
+        setCode(`INC-MUNI-09${nextNum}`);
+        setSender('Cairo Urban Development Authority');
+        setRecipient('Rowad Project Director');
+        setStatusEn('Awaiting Response Letter');
+        setStatusAr('بانتظار خطاب الرد والتعليق الرسمي');
+        setPriority('High');
+        setVersion('Original');
+      } else {
+        setCode(`OUT-EXP-ROWG-7${nextNum}1`);
+        setSender('Rowad HSE Manager');
+        setRecipient('General Civil Aviation Authority');
+        setStatusEn('Delivered & Stamped');
+        setStatusAr('تم التسليم والختم بالوارد رسمياً');
+        setPriority('Medium');
+        setVersion('Rev 1.0');
+      }
+    }
+  }, [category, isAddModalOpen, documents.length]);
+
+  const filteredDocs = documents.filter(doc => {
+    const matchesSearch = doc.code.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          doc.title.en.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          doc.title.ar.includes(searchQuery) ||
+                          doc.projectName.en.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          doc.projectName.ar.includes(searchQuery);
+    const matchesCategory = categoryFilter === 'all' || doc.category === categoryFilter;
+    return matchesSearch && matchesCategory;
+  });
+
+  const selectedDoc = documents.find(d => d.id === selectedDocId);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!titleEn || !titleAr || !projectNameEn || !projectNameAr) {
+      alert(isAr ? 'الرجاء ملء جميع الحقول المطلوبة بما في ذلك أسماء المشاريع باللغتين' : 'Please input required fields including names in English and Arabic');
+      return;
+    }
+
+    const nextId = 'D-' + (documents.length + 1).toString().padStart(3, '0');
+    const newDoc: DocumentRecord = {
+      id: nextId,
+      code: code || `DOC-0${documents.length + 1}`,
+      title: { en: titleEn, ar: titleAr },
+      category,
+      projectName: { en: projectNameEn, ar: projectNameAr },
+      sender: sender || 'Rowad General Contracting',
+      recipient: recipient || 'Lead Representative',
+      dateReceived: new Date().toISOString().split('T')[0],
+      status: { en: statusEn || 'Archived', ar: statusAr || 'تمت الأرشفة بنجاح' },
+      priority,
+      version: version || 'Rev 1.0'
+    };
+
+    setDocuments([newDoc, ...documents]);
+    setSelectedDocId(newDoc.id);
+    setIsAddModalOpen(false);
+
+    // Reset Form Input
+    setTitleEn('');
+    setTitleAr('');
+    setProjectNameEn('');
+    setProjectNameAr('');
+    setSender('');
+    setRecipient('');
+  };
+
+  return (
+    <div className="px-6 py-6 max-w-[1800px] mx-auto space-y-6 animate-in fade-in duration-500 relative select-none">
+      
+      {/* 1. Page Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div>
+          <h1 className="text-[32px] font-black text-brand-navy tracking-tight leading-tight font-sans">
+            {isAr ? "نظام مراقبة وتدفق المستندات" : "Document Control EDMS"}
+          </h1>
+          <p className="text-sm text-gray-500 mt-1 font-medium">
+            {isAr ? "المنبثق الرقمي لمطابقة الوارد والصادر وإدارة المخططات التفصيلية للتنفيذ." : "Unified engineering document management, transmittals ledger, & drawings catalog."}
+          </p>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setIsAddModalOpen(true)}
+            className="px-5 py-3 bg-brand-navy hover:bg-brand-navy/90 text-white rounded-2xl shadow-md flex items-center gap-2 text-[15px] font-bold transition-all hover:-translate-y-0.5 cursor-pointer"
+          >
+            <Plus className="w-4 h-4 text-emerald-400" />
+            <span>{isAr ? "تسجيل مستند وارد/صادر" : "Register Document / Drawing"}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 2. Micro Dashboard summaries for Document Control */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: isAr ? 'خطابات واردة ومحاضر' : 'Incoming Letters', val: '43 Actionable', change: '8 Urgent', color: 'border-l-indigo-600', count: '98% Response compliant' },
+          { label: isAr ? 'خطابات صادرة رسمية' : 'Outgoing Dispatched', val: '12 Letters', change: '2 Drafts', color: 'border-l-blue-600', count: '100% Stamped and archived' },
+          { label: isAr ? 'المخططات الهندسية (Shop Drawings)' : 'Live Shop Drawings', val: '5,400 Registries', change: 'Rev 2.0 active', color: 'border-l-emerald-600', count: 'Approved for Construction' },
+          { label: isAr ? 'محاضر الإرسال (Transmittals)' : 'Active Transmittals', val: '18 Pending Verification', change: '3 Submissions-due', color: 'border-l-brand-red', count: 'Automated notification loops' },
+        ].map((met, idx) => (
+          <div key={idx} className={`bg-white p-6 rounded-2xl border-l-4 ${met.color} shadow-sm space-y-2`}>
+            <p className="text-xs text-gray-400 uppercase font-black tracking-wider">{met.label}</p>
+            <div className="flex justify-between items-baseline">
+              <span className="text-xl font-black text-brand-navy leading-none">{met.val}</span>
+              <span className="text-[11px] text-brand-red font-bold">{met.change}</span>
+            </div>
+            <p className="text-[11px] text-gray-400 font-medium">{met.count}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* 3. Search and Quick Category Matrix */}
+      <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm space-y-4">
+        <div className="flex flex-col lg:flex-row gap-4 justify-between items-stretch">
+          <div className="relative flex-1">
+            <Search className="absolute inset-y-0 left-4 rtl:left-auto rtl:right-4 my-auto w-4 h-4 text-gray-400" />
+            <input 
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={isAr ? "ابحث برمز المخطط الهيكلي، أو رقم الصادر والوارد..." : "Search document code, title, sender, recipient..."}
+              className="w-full bg-gray-50 border border-gray-150 focus:border-brand-navy rounded-2xl py-3.5 pl-11 pr-5 rtl:pr-11 rtl:pl-5 text-[14px] text-brand-navy focus:outline-none focus:ring-4 focus:ring-brand-navy/5 focus:bg-white transition-all shadow-inner"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <button 
+              onClick={() => setCategoryFilter('all')}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${categoryFilter === 'all' ? 'bg-brand-navy text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
+            >
+              {isAr ? "الكل" : "All Documents"}
+            </button>
+            <button 
+              onClick={() => setCategoryFilter('Drawing')}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${categoryFilter === 'Drawing' ? 'bg-brand-navy text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
+            >
+              📂 {isAr ? "مخططات هندسية" : "Shop Drawings"}
+            </button>
+            <button 
+              onClick={() => setCategoryFilter('Transmittal')}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${categoryFilter === 'Transmittal' ? 'bg-brand-navy text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
+            >
+              ✉️ {isAr ? "محاضر إرسال" : "Transmittals"}
+            </button>
+            <button 
+              onClick={() => setCategoryFilter('Incoming')}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${categoryFilter === 'Incoming' ? 'bg-brand-navy text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
+            >
+              📥 {isAr ? "مستندات واردة" : "Incoming Docs"}
+            </button>
+            <button 
+              onClick={() => setCategoryFilter('Outgoing')}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${categoryFilter === 'Outgoing' ? 'bg-brand-navy text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
+            >
+              📤 {isAr ? "مستندات صادرة" : "Outgoing Docs"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. Main Document Workspace Grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+        
+        {/* Table segment */}
+        <div className={`transition-all duration-300 ${selectedDocId ? 'xl:col-span-8' : 'xl:col-span-12'} space-y-4`}>
+          <div className="bg-white rounded-[32px] border border-gray-100 shadow-sm overflow-hidden pb-4">
+            <div className="overflow-x-auto premium-scrollbar">
+              <table className="w-full text-start border-collapse text-sans text-[15px]">
+                <thead>
+                  <tr className="bg-gray-50/60 border-b border-gray-100 text-[15px] font-extrabold uppercase text-gray-400 tracking-wider">
+                    <th className="py-4.5 px-5 text-start">{isAr ? "فئة المستند" : "Category"}</th>
+                    <th className="py-4.5 px-5 text-start">{isAr ? "كود المستند" : "Document Code"}</th>
+                    <th className="py-4.5 px-5 text-start min-w-[220px]">{isAr ? "عنوان المستند" : "Document Title"}</th>
+                    <th className="py-4.5 px-5 text-start">{isAr ? "المصدر" : "Originator"}</th>
+                    <th className="py-4.5 px-5 text-start">{isAr ? "شفرة الإصدار" : "Revision"}</th>
+                    <th className="py-4.5 px-5 text-start">{isAr ? "الحالة" : "Status"}</th>
+                    <th className="py-4.5 px-5 text-center">{isAr ? "كشف" : "View"}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {filteredDocs.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-12 text-center text-gray-400">
+                        {isAr ? "لا توجد مستندات تطابق المعايير المطلوبة." : "No engineering control documents matched selected settings."}
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredDocs.map((doc) => {
+                      const isSelected = doc.id === selectedDocId;
+                      return (
+                        <tr 
+                          key={doc.id}
+                          onClick={() => setSelectedDocId(doc.id)}
+                          className={`hover:bg-gray-50/50 transition-all duration-150 cursor-pointer text-[15px] font-semibold text-gray-700
+                            ${isSelected ? 'bg-brand-navy/5 shadow-inner border-y' : ''}
+                          `}
+                        >
+                          <td className="py-4.5 px-5 whitespace-nowrap">
+                            <span className="px-3.5 py-1.5 rounded-xl bg-gray-50 text-gray-600 font-extrabold text-[12px]">
+                              {doc.category}
+                            </span>
+                          </td>
+                          <td className="py-4.5 px-5 font-mono text-[12px] text-gray-400 whitespace-nowrap">{doc.code}</td>
+                          <td className="py-4.5 px-5">
+                            <BiText 
+                              text={doc.title} 
+                              primaryLang={lang}
+                              primaryClassName="font-extrabold text-brand-navy text-[16px] block tracking-tight"
+                              secondaryClassName="text-[11px] text-gray-400 leading-normal block mt-1"
+                            />
+                          </td>
+                          <td className="py-4.5 px-5 text-[13px] font-medium text-gray-500 whitespace-nowrap">{doc.sender}</td>
+                          <td className="py-4.5 px-5 font-mono text-[12px] text-gray-400">{doc.version}</td>
+                          <td className="py-4.5 px-5 whitespace-nowrap">
+                            <span className="px-3 py-1 bg-emerald-50 text-emerald-700 font-bold rounded-lg text-xs">
+                              {isAr ? doc.status.ar : doc.status.en}
+                            </span>
+                          </td>
+                          <td className="py-4.5 px-5 text-center" onClick={(e) => e.stopPropagation()}>
+                            <button 
+                              onClick={() => setSelectedDocId(doc.id)}
+                              className="p-1.5 hover:bg-gray-100 hover:text-brand-navy text-gray-400 rounded-lg transition-colors"
+                            >
+                              <Eye className="w-5 h-5" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* Audit drawer (Right side) */}
+        {selectedDoc && (
+          <div className="xl:col-span-4 bg-white rounded-[32px] border border-gray-150 shadow-xl p-7 space-y-7 animate-in slide-in-from-right-8 duration-300 xl:sticky xl:top-4 overflow-y-auto max-h-[85vh] no-scrollbar">
+            
+            <div className="flex justify-between items-start pb-5 border-b border-gray-150">
+              <div className="space-y-1">
+                <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest block font-sans">
+                  {selectedDoc.code} • EDMS CONTROLLER
+                </span>
+                <h3 className="text-[20px] font-black text-brand-navy leading-tight font-sans">
+                  {isAr ? selectedDoc.title.ar : selectedDoc.title.en}
+                </h3>
+              </div>
+              <button 
+                onClick={() => setSelectedDocId(null)}
+                className="p-2 bg-gray-50 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-brand-red transition-all cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* General Specs */}
+            <div className="space-y-4">
+              <div className="bg-gray-50 p-5 rounded-[24px] border border-gray-150 space-y-3">
+                <span className="text-[11px] text-gray-400 uppercase font-black block tracking-wider font-sans">{isAr ? "تفاصيل الإرسال وتراخيص العمل" : "Dispatched Parties & Core Permits"}</span>
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <label className="text-gray-400 block font-bold mb-0.5">{isAr ? "من الجهة المصدرة" : "From (Sender)"}</label>
+                    <p className="font-bold text-gray-800">{selectedDoc.sender}</p>
+                  </div>
+                  <div>
+                    <label className="text-gray-400 block font-bold mb-0.5">{isAr ? "إلى الجهة المستلمة" : "To (Recipient)"}</label>
+                    <p className="font-bold text-gray-800">{selectedDoc.recipient}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 p-5 rounded-[24px] border border-gray-150 space-y-3">
+                <span className="text-[11px] text-gray-400 uppercase font-black block tracking-wider font-sans">{isAr ? "مطابقة المعايير والمراجعة الفنية" : "Verifications & Critical Checks"}</span>
+                <div className="flex justify-between items-center text-xs">
+                  <div>
+                    <span className="text-gray-400 block font-medium">{isAr ? "شفرة المراجعة" : "Revision Log"}</span>
+                    <span className="font-mono text-gray-800 font-extrabold">{selectedDoc.version}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 block font-medium">{isAr ? "درجة المتابعة" : "Priority"}</span>
+                    <span className={`px-2 py-0.5 rounded font-black text-[10px] ${selectedDoc.priority === 'High' ? 'bg-red-50 text-brand-red' : 'bg-gray-150 text-gray-600'}`}>{selectedDoc.priority}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Download Attachment Actions */}
+            <div className="space-y-3 border-t border-gray-100 pt-6">
+              <span className="text-[11px] text-gray-400 uppercase font-black block tracking-wide font-sans">
+                {isAr ? "الملفات الهندسية المرفقة (CAD/PDF)" : "Engineering File Attachments (CAD/PDF)"}
+              </span>
+              <div className="p-4 bg-brand-navy/5 border border-brand-navy/10 rounded-2xl flex items-center justify-between text-xs font-semibold text-brand-navy">
+                <div className="flex items-center gap-2 truncate">
+                  <FileText className="w-5 h-5 text-brand-red shrink-0" />
+                  <span className="truncate">{selectedDoc.code}.pdf</span>
+                </div>
+                <button className="px-3 py-1.5 bg-brand-navy text-white rounded-lg hover:bg-brand-navy/90 text-[11px] font-black cursor-pointer">
+                  DOWNLOAD
+                </button>
+              </div>
+            </div>
+
+          </div>
+        )}
+
+      </div>
+
+      {/* Stateful Document Registration Overlay Modal */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 bg-brand-navy/60 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-300">
+          <div className="bg-white rounded-[32px] w-full max-w-2xl border border-gray-150 shadow-2xl overflow-hidden p-8 space-y-6 relative border-t-8 border-brand-navy max-h-[90vh] overflow-y-auto no-scrollbar animate-in zoom-in-95 duration-200">
+            
+            {/* Modal Header */}
+            <div className="flex justify-between items-center pb-4 border-b border-gray-100">
+              <div>
+                <h3 className="text-xl font-black text-brand-navy font-sans flex items-center gap-2">
+                  <Folder className="w-5 h-5 text-brand-red" />
+                  <span>{isAr ? "تسجيل مستنىد أو مخطط هندسي" : "Register Engineering Document / Drawing"}</span>
+                </h3>
+                <p className="text-xs text-gray-400 mt-1">
+                  {isAr ? "إضافة مخطط تفصيلي، خطاب وارد، أو صادر في قاعدة البيانات الموحدة." : "Commit a new drawing standard, incoming memo, or dispatched dispatch to the EDMS."}
+                </p>
+              </div>
+              <button 
+                onClick={() => setIsAddModalOpen(false)}
+                className="p-2 bg-gray-50 hover:bg-gray-100 text-gray-400 hover:text-brand-red rounded-xl transition-all cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-5">
+              
+              {/* Category & Autogenerated Code */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block">
+                    {isAr ? "فئة وتصنيف المستند" : "EDMS Document Category"}
+                  </label>
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value as any)}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold text-brand-navy focus:outline-none focus:ring-4 focus:ring-brand-navy/5 cursor-pointer"
+                  >
+                    <option value="Drawing">📂 Drawing (مخطط فني للهيكل)</option>
+                    <option value="Transmittal">✉️ Transmittal (محضر إرسال ومطابقة)</option>
+                    <option value="Incoming">📥 Incoming (مستند وارد رسمي)</option>
+                    <option value="Outgoing">📤 Outgoing (مستند صادر مفوض)</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block">
+                    {isAr ? "كود ومعرف المستند" : "EDMS Document Code"}
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    placeholder="e.g. ROWAD-NEOM-CIV-DRW-043"
+                    className="w-full bg-gray-50 border border-gray-200 focus:border-brand-navy rounded-xl px-4 py-3 text-sm font-bold text-brand-navy focus:outline-none focus:ring-4 focus:ring-brand-navy/5 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Title (English & Arabic) */}
+              <div className="space-y-2.5">
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block">
+                  {isAr ? "عنوان المستند أو المعاملة" : "Document & Revision Title"}
+                </label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input
+                    type="text"
+                    required
+                    value={titleEn}
+                    onChange={(e) => setTitleEn(e.target.value)}
+                    placeholder="Document Title (English)"
+                    className="w-full bg-gray-50 border border-gray-200 focus:border-brand-navy rounded-xl px-4 py-3 text-sm font-bold text-brand-navy focus:outline-none focus:ring-4 focus:ring-brand-navy/5 transition-all"
+                  />
+                  <input
+                    type="text"
+                    required
+                    value={titleAr}
+                    onChange={(e) => setTitleAr(e.target.value)}
+                    placeholder="عنوان المستند (بالعربية)"
+                    className="w-full bg-gray-50 border border-gray-200 focus:border-brand-navy text-right rounded-xl px-4 py-3 text-sm font-bold text-brand-navy focus:outline-none focus:ring-4 focus:ring-brand-navy/5 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Project Title (English & Arabic) */}
+              <div className="space-y-2.5">
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block">
+                  {isAr ? "المشروع التابع له المستند" : "Target Infrastructure Project"}
+                </label>
+                <div className="p-3 bg-brand-navy/5 rounded-xl flex flex-wrap gap-2 mb-2">
+                  <span className="text-[10px] text-gray-400 font-extrabold uppercase py-1">{isAr ? "مقترحات:" : "Proposals:"}</span>
+                  {[
+                    { en: 'Neom Spine Ground Terminal Expansion', ar: 'توسعة محطة النفق الأرضية بمشروع نيوم' },
+                    { en: 'Al Maktoum Terminal Cargo Ramp', ar: 'مدرج الشحن بمطار آل مكتوم الدولي الجديد' },
+                    { en: 'Cairo Capital East Logistics Hub', ar: 'المركز اللوجستي لشرق العاصمة الإدارية' }
+                  ].map((proj, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        setProjectNameEn(proj.en);
+                        setProjectNameAr(proj.ar);
+                      }}
+                      className="px-2.5 py-1 bg-white text-[11px] font-bold rounded-lg border border-gray-200 text-brand-navy hover:border-brand-navy hover:bg-brand-navy hover:text-white transition-all cursor-pointer"
+                    >
+                      {isAr ? proj.ar : proj.en}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input
+                    type="text"
+                    required
+                    value={projectNameEn}
+                    onChange={(e) => setProjectNameEn(e.target.value)}
+                    placeholder="Project Name (English)"
+                    className="w-full bg-gray-50 border border-gray-200 focus:border-brand-navy rounded-xl px-4 py-3 text-sm font-bold text-brand-navy focus:outline-none focus:ring-4 focus:ring-brand-navy/5 transition-all"
+                  />
+                  <input
+                    type="text"
+                    required
+                    value={projectNameAr}
+                    onChange={(e) => setProjectNameAr(e.target.value)}
+                    placeholder="اسم المشروع (بالعربية)"
+                    className="w-full bg-gray-50 border border-gray-200 focus:border-brand-navy text-right rounded-xl px-4 py-3 text-sm font-bold text-brand-navy focus:outline-none focus:ring-4 focus:ring-brand-navy/5 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Sender & Recipient */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block">
+                    {isAr ? "الجهة الصادرة (المرسل)" : "Originator / Sender"}
+                  </label>
+                  <input
+                    type="text"
+                    value={sender}
+                    onChange={(e) => setSender(e.target.value)}
+                    className="w-full bg-gray-50 border border-gray-200 focus:border-brand-navy rounded-xl px-4 py-3 text-sm font-bold text-brand-navy focus:outline-none focus:ring-4 focus:ring-brand-navy/5 transition-all"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block">
+                    {isAr ? "الجهة المستقبلة (المرسل إليه)" : "Dispatched To / Recipient"}
+                  </label>
+                  <input
+                    type="text"
+                    value={recipient}
+                    onChange={(e) => setRecipient(e.target.value)}
+                    className="w-full bg-gray-50 border border-gray-200 focus:border-brand-navy rounded-xl px-4 py-3 text-sm font-bold text-brand-navy focus:outline-none focus:ring-4 focus:ring-brand-navy/5 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Status (English & Arabic) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block">
+                    {isAr ? "حالة المستند باللغة الإنجليزية" : "EDMS Workflow Status (English)"}
+                  </label>
+                  <input
+                    type="text"
+                    value={statusEn}
+                    onChange={(e) => setStatusEn(e.target.value)}
+                    className="w-full bg-gray-50 border border-gray-200 focus:border-brand-navy rounded-xl px-4 py-3 text-sm font-bold text-brand-navy focus:outline-none focus:ring-4 focus:ring-brand-navy/5 transition-all"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block">
+                    {isAr ? "الحالة باللغة العربية" : "EDMS Workflow Status (Arabic)"}
+                  </label>
+                  <input
+                    type="text"
+                    value={statusAr}
+                    onChange={(e) => setStatusAr(e.target.value)}
+                    className="w-full bg-gray-50 border border-gray-200 focus:border-brand-navy text-right rounded-xl px-4 py-3 text-sm font-bold text-brand-navy focus:outline-none focus:ring-4 focus:ring-brand-navy/5 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Priority & Version */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block">
+                    {isAr ? "مستوى الأولوية أو الخطورة" : "Action Priority"}
+                  </label>
+                  <select
+                    value={priority}
+                    onChange={(e) => setPriority(e.target.value as any)}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold text-brand-navy focus:outline-none focus:ring-4 focus:ring-brand-navy/5 cursor-pointer"
+                  >
+                    <option value="High">🔴 High Priority (أولوية قصوى بمراجعة للمهندس)</option>
+                    <option value="Medium">🟡 Medium Priority (متوسط الأهمية ومراجعة خلال يومين)</option>
+                    <option value="Low">🟢 Low Priority (عادي للمطابقة الدورية)</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block">
+                    {isAr ? "شفرة الإصدار أو المخطط" : "Revision Version Code"}
+                  </label>
+                  <input
+                    type="text"
+                    value={version}
+                    onChange={(e) => setVersion(e.target.value)}
+                    placeholder="e.g. Rev 1.0 or Original"
+                    className="w-full bg-gray-50 border border-gray-200 focus:border-brand-navy rounded-xl px-4 py-3 text-sm font-bold text-brand-navy focus:outline-none focus:ring-4 focus:ring-brand-navy/5 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Form Buttons */}
+              <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="px-5 py-3 bg-gray-100 hover:bg-gray-150 rounded-xl text-xs font-black text-gray-500 cursor-pointer"
+                >
+                  {isAr ? "إلغاء الأمر" : "Cancel"}
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-3 bg-brand-navy hover:bg-brand-navy/90 text-white rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer hover:-translate-y-0.5 shadow-md active:translate-y-0 transition-all"
+                >
+                  <Plus className="w-4 h-4 text-emerald-400" />
+                  <span>{isAr ? "تسجيل المخطط / المستند" : "Register & Submit Document"}</span>
+                </button>
+              </div>
+
+            </form>
+
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
