@@ -3,5 +3,6 @@ export enum HealthStatus {
   URGENT = 'Urgent',
   UNDER_REVIEW = 'Under Review',
   DUE_SOON = 'Due Soon',
-  OVERDUE = 'Overdue'
+  OVERDUE = 'Overdue',
+  ARCHIVED = 'Archived'
 }

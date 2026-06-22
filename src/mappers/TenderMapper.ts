@@ -113,6 +113,7 @@ export class TenderMapper {
 
     return {
       id: legacy.id,
+      recordStatus: mappedRecordStatus,
       projectCode: legacy.projectCode,
       tenderNumber: legacy.tenderNumber,
       projectName: legacy.projectName,
@@ -132,17 +133,23 @@ export class TenderMapper {
         tenderStudyEngineer: legacy.tenderStudyEngineer
       },
       timeline: {
-        techSubmissionDate: legacy.techSubmissionDate,
-        commSubmissionDate: legacy.commSubmissionDate,
-        overallSubmissionDate: legacy.overallSubmissionDate,
-        closingDate: legacy.closingDate,
-        kickOffDate: legacy.kickOffDate,
-        alignmentDate: legacy.alignmentDate,
-        followUpDate: legacy.followUpDate,
-        riskDueDate: legacy.riskDueDate,
-        contractQualsDueDate: legacy.contractQualsDueDate,
-        siteVisitRequired: legacy.siteVisitRequired,
-        siteVisitDate: legacy.siteVisitDate
+        submission: {
+          techSubmissionDate: legacy.techSubmissionDate,
+          commSubmissionDate: legacy.commSubmissionDate,
+          overallSubmissionDate: legacy.overallSubmissionDate,
+          closingDate: legacy.closingDate
+        },
+        internal: {
+          siteVisitRequired: legacy.siteVisitRequired,
+          siteVisitDate: legacy.siteVisitDate
+        },
+        calculated: {
+          kickOffDate: legacy.kickOffDate,
+          alignmentDate: legacy.alignmentDate,
+          followUpDate: legacy.followUpDate,
+          riskDueDate: legacy.riskDueDate,
+          contractQualsDueDate: legacy.contractQualsDueDate
+        }
       },
       financials: {
         estimatedValue: estimatedValueMoney,
@@ -198,7 +205,7 @@ export class TenderMapper {
     // Days remaining and Health will be dynamically computed during UI integration,
     // but we support populating default fallback legacy values here.
     const today = new Date('2026-06-22T05:25:00-07:00');
-    const targetDate = new Date(domain.timeline.techSubmissionDate);
+    const targetDate = new Date(domain.timeline.submission.techSubmissionDate);
     const diffTime = targetDate.getTime() - today.getTime();
     const daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
@@ -222,15 +229,15 @@ export class TenderMapper {
       tenderStudyEngineer: domain.assignments.tenderStudyEngineer,
       department: domain.general.department,
       priority: priorityStr,
-      techSubmissionDate: domain.timeline.techSubmissionDate,
-      commSubmissionDate: domain.timeline.commSubmissionDate,
-      overallSubmissionDate: domain.timeline.overallSubmissionDate,
-      closingDate: domain.timeline.closingDate,
-      kickOffDate: domain.timeline.kickOffDate,
-      alignmentDate: domain.timeline.alignmentDate,
-      followUpDate: domain.timeline.followUpDate,
-      riskDueDate: domain.timeline.riskDueDate,
-      contractQualsDueDate: domain.timeline.contractQualsDueDate,
+      techSubmissionDate: domain.timeline.submission.techSubmissionDate,
+      commSubmissionDate: domain.timeline.submission.commSubmissionDate,
+      overallSubmissionDate: domain.timeline.submission.overallSubmissionDate,
+      closingDate: domain.timeline.submission.closingDate,
+      kickOffDate: domain.timeline.calculated.kickOffDate,
+      alignmentDate: domain.timeline.calculated.alignmentDate,
+      followUpDate: domain.timeline.calculated.followUpDate,
+      riskDueDate: domain.timeline.calculated.riskDueDate,
+      contractQualsDueDate: domain.timeline.calculated.contractQualsDueDate,
       projectStatus: domain.status.projectStatus,
       awardStatus: domain.status.awardStatus,
       recordStatus: recStatus,
@@ -253,8 +260,8 @@ export class TenderMapper {
       checklistDrawings: domain.checklist.checklistDrawings,
       checklistBOQ: domain.checklist.checklistBOQ,
       checklistSpecs: domain.checklist.checklistSpecs,
-      siteVisitRequired: domain.timeline.siteVisitRequired,
-      siteVisitDate: domain.timeline.siteVisitDate
+      siteVisitRequired: domain.timeline.internal.siteVisitRequired,
+      siteVisitDate: domain.timeline.internal.siteVisitDate
     };
   }
 }
