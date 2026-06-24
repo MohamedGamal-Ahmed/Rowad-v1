@@ -8,8 +8,7 @@ export class ProjectControlsMapper {
   public static toDomain(legacy: ExecutionRecord): ProjectControlsRecord {
     const parsedAmount = FinancialsCalculator.parseToNumber(legacy.valueAED);
     
-    // Fallback mapping for unsupported / legacy SPR records to map as static transaction
-    const type = (legacy.type === 'SPR' ? 'IPC' : legacy.type) as ProjectControlsRecordType;
+    const type = legacy.type as ProjectControlsRecordType;
 
     return {
       id: legacy.id,
