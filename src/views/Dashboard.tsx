@@ -15,6 +15,7 @@ import { ExecutionRecord } from './ProjectExecution';
 import { DocumentRecord } from './DocumentControl';
 import { FinancialsCalculator } from '../business-rules/FinancialsCalculator';
 import { DashboardService } from '../services/DashboardService';
+import { Clock as AppClock } from '../services/Clock';
 
 interface DashboardProps {
   lang: 'ar' | 'en';
@@ -41,7 +42,7 @@ export function Dashboard({ lang, list, executionRecords, documentRecords }: Das
   const getCalendarParts = (dateStr: string) => {
     if (!dateStr) return { day: '15', month: isAr ? 'يوليو' : 'JUL' };
     try {
-      const d = new Date(dateStr);
+      const d = AppClock.parse(dateStr);
       if (isNaN(d.getTime())) {
         return { day: dateStr.split('-')[2] || '15', month: isAr ? 'يوليو' : 'JUL' };
       }
@@ -207,7 +208,7 @@ export function Dashboard({ lang, list, executionRecords, documentRecords }: Das
 
   // 6. Execution submittals progression over timeline
   const executionRecordsSortedByDate = [...executionRecords]
-    .sort((a, b) => new Date(a.submittedDate).getTime() - new Date(b.submittedDate).getTime());
+    .sort((a, b) => AppClock.parse(a.submittedDate).getTime() - AppClock.parse(b.submittedDate).getTime());
 
   let rollingTotal = 0;
   const timelineChartData = executionRecordsSortedByDate.map(rec => {
@@ -483,7 +484,7 @@ export function Dashboard({ lang, list, executionRecords, documentRecords }: Das
               <div className="space-y-2.5 mt-4 max-h-[295px] overflow-y-auto no-scrollbar">
                 
                 {/* 1. Urgent Tenders nearing zero */}
-                {list.filter(t => t.recordStatus === 'Active' && t.daysRemaining <= 7).map(tender => (
+                {list.filter(t => t.recordStatus === 'Active' && (t.health === 'Due Soon' || t.health === 'Overdue')).map(tender => (
                   <div key={tender.id} className="p-3 bg-red-50/50 border border-brand-red/10 rounded-2xl flex justify-between items-center text-xs">
                     <div className="flex items-center gap-3">
                       <span className="p-2 bg-rose-100 text-brand-red rounded-lg font-bold text-[10px]">Tender Exp</span>
@@ -534,7 +535,7 @@ export function Dashboard({ lang, list, executionRecords, documentRecords }: Das
                 ))}
 
                 {/* Fallback if clean state */}
-                {list.filter(t => t.recordStatus === 'Active' && t.daysRemaining <= 7).length === 0 &&
+                {list.filter(t => t.recordStatus === 'Active' && (t.health === 'Due Soon' || t.health === 'Overdue')).length === 0 &&
                  executionRecords.filter(r => r.health === 'Urgent' || r.health === 'Under Review').length === 0 &&
                  documentRecords.filter(d => d.priority === 'High').length === 0 && (
                    <div className="p-8 bg-emerald-50 text-emerald-800 rounded-[28px] border border-emerald-100 flex flex-col items-center justify-center text-center space-y-2">

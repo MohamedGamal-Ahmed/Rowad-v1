@@ -131,10 +131,19 @@ export default function App() {
     const updatedList = typeof updater === 'function' ? (updater as any)(tendersList) : updater;
     setTendersList(updatedList);
 
-    // Persist each item into the repository via TenderService
+    // Persist only modified items into the repository via TenderService
     const service = new TenderService();
-    for (const item of updatedList) {
-      await service.commitLegacyTender(item);
+    const changedItems = updatedList.filter((item: Tender) => {
+      const existing = tendersList.find(t => t.id === item.id);
+      if (!existing) return true;
+      return JSON.stringify(item) !== JSON.stringify(existing);
+    });
+
+    for (const item of changedItems) {
+      const res = await service.commitLegacyTender(item);
+      if (!res.success) {
+        console.error("Failed to commit tender:", res.errors);
+      }
     }
   };
 
@@ -142,11 +151,20 @@ export default function App() {
     const updatedList = typeof updater === 'function' ? (updater as any)(executionRecords) : updater;
     setExecutionRecords(updatedList);
 
-    // Persist each item into storage via ProjectControlsService
+    // Persist only modified items into storage via ProjectControlsService
     const pcService = new ProjectControlsService();
-    for (const item of updatedList) {
+    const changedItems = updatedList.filter((item: ExecutionRecord) => {
+      const existing = executionRecords.find(r => r.id === item.id);
+      if (!existing) return true;
+      return JSON.stringify(item) !== JSON.stringify(existing);
+    });
+
+    for (const item of changedItems) {
       const domainRec = ProjectControlsMapper.toDomain(item);
-      await pcService.commitRecord(domainRec);
+      const res = await pcService.commitRecord(domainRec);
+      if (!res.success) {
+        console.error("Failed to commit execution record:", res.errors);
+      }
     }
   };
 

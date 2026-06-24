@@ -2,6 +2,23 @@
 
 All notable changes to the **ROWAD Enterprise Platform** will be documented in this file.
 
+## [1.3.0] - 2026-06-24
+
+### Added
+- **Unified Clock Provider**: Developed a centralized `Clock` service in `src/services/Clock.ts` providing standard methods (`now`, `today`, `todayISO`, `parse`, `diffInDays`) as a single source of truth for all application date/time management, supporting deterministic mocking and eliminating raw browser `new Date()` calls.
+- **Dynamic Health Evaluation**: Leveraged `HealthCalculator.calculate` in `TenderMapper`, `TenderService`, `Dashboard`, and `OngoingTenders` to make `HealthSettings` the sole source of truth for computing project and tender health.
+
+### Fixed
+- **Overdue Threshold Bug**: Resolved the calculation issue where negative remaining days were incorrectly clamped to zero in `TenderService`, which previously made the overdue state unresolvable.
+- **Hardcoded Thresholds Removal**: Replaced hardcoded comparisons like `t.daysRemaining <= 7` and status-color styles in `Dashboard.tsx` and `OngoingTenders.tsx` with dynamic checks based on `t.health`.
+
+### Removed (Dead Code Clearance)
+- **Dead Hook Deletion**: Cleared five unused/obsolete React hooks (`useTenderActions.ts`, `useTenderFilters.ts`, `useTenderSearch.ts`, `useTenderSelection.ts`, `useTenderSorting.ts`) and deleted their empty parent directory.
+- **Redundant Helper Deletion**: Removed the unused duplicate `addDays` helper function inside `OngoingTenders.tsx`.
+
+### Improved
+- **Optimized Persistence Pipeline**: Refactored list updater methods in `App.tsx` to execute exactly one operation per change, filtering and committing ONLY the modified or new entities, rather than re-committing the entire unchanged dataset.
+
 ## [1.2.0] - 2026-06-24
 
 ### Added

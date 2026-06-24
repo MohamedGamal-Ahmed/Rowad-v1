@@ -1,3 +1,5 @@
+import { Clock } from './Clock';
+
 export enum LogLevel {
   DEBUG = 'DEBUG',
   INFO = 'INFO',
@@ -56,7 +58,7 @@ export class LoggingService {
 
   private writeLog(level: LogLevel, category: LogEntry['category'], message: string, context?: Record<string, any>): void {
     const entry: LogEntry = {
-      timestamp: new Date().toISOString(),
+      timestamp: Clock.now().toISOString(),
       level,
       category,
       message,

@@ -12,6 +12,9 @@ import { TimelineCalculator } from '../../../../business-rules/TimelineCalculato
 import { FinancialsCalculator } from '../../../../business-rules/FinancialsCalculator';
 import { Settings } from '../../../../domain/administration/Settings';
 import { NumberingService } from '../../../../services/NumberingService';
+import { Clock } from '../../../../services/Clock';
+import { HealthCalculator } from '../../../../business-rules/HealthCalculator';
+import { HealthStatus } from '../../../../enums/HealthStatus';
 
 interface TenderWizardModalProps {
   onClose: () => void;
@@ -251,6 +254,17 @@ export function TenderWizardModal({
     const parsedCost = FinancialsCalculator.parseToNumber(wizardForm.estCost);
     const calculatedBond = FinancialsCalculator.calculateBidBond(parsedValue, settings.financialSettings);
 
+    const calculatedDaysRemaining = wizardForm.techDate ? Clock.diffInDays(wizardForm.techDate) : 30;
+    const calculatedHealth = HealthCalculator.calculate(calculatedDaysRemaining, false, settings.healthSettings);
+    let healthStr: 'Healthy' | 'Due Soon' | 'Overdue' | 'Archived' = 'Healthy';
+    if (calculatedHealth === HealthStatus.ARCHIVED) {
+      healthStr = 'Archived';
+    } else if (calculatedHealth === HealthStatus.OVERDUE) {
+      healthStr = 'Overdue';
+    } else if (calculatedHealth === HealthStatus.DUE_SOON) {
+      healthStr = 'Due Soon';
+    }
+
     const createdTender: Tender = {
       id: `t-wizard-${Date.now()}`,
       projectCode: wizardForm.projectCode,
@@ -274,10 +288,8 @@ export function TenderWizardModal({
       projectStatus: { en: 'Active Study', ar: 'تحت الدراسة والتقدير' },
       awardStatus: { en: 'Pending Submission', ar: 'قيد تجهيز المغلفات' },
       recordStatus: 'Active',
-      daysRemaining: wizardForm.techDate
-        ? Math.max(0, Math.ceil((new Date(wizardForm.techDate).getTime() - new Date().getTime()) / (1000 * 3600 * 24)))
-        : 30,
-      health: 'Healthy',
+      daysRemaining: calculatedDaysRemaining,
+      health: healthStr,
       estimatedValue: `${wizardForm.currency} ${FinancialsCalculator.formatAmount(parsedValue)}`,
       estimatedCost: `${wizardForm.currency} ${FinancialsCalculator.formatAmount(parsedCost)}`,
       bondAmount: `${wizardForm.currency} ${FinancialsCalculator.formatAmount(calculatedBond)}`,
@@ -291,10 +303,10 @@ export function TenderWizardModal({
         {
           id: `wn-${Date.now()}-1`,
           author: 'ROWAD WIZARD',
-          date: new Date().toISOString().split('T')[0],
+          date: Clock.todayISO(),
           text: 'SaaS Guided pre-award wizard completed. System loaded timeline milestones dynamically according to Pre-Award settings.',
         },
-        { id: `wn-${Date.now()}-2`, author: 'WIZARD LOG', date: new Date().toISOString().split('T')[0], text: extraNoteText },
+        { id: `wn-${Date.now()}-2`, author: 'WIZARD LOG', date: Clock.todayISO(), text: extraNoteText },
       ],
       documents: [],
     };
@@ -921,16 +933,16 @@ export function TenderWizardModal({
                   if (!wizardForm.techDate) warnings.push(isAr ? 'تاريخ تقديم العرض الفني إلزامي!' : 'Technical Submission Date is required!');
                   if (!wizardForm.commDate) warnings.push(isAr ? 'تاريخ تقديم العرض المالي إلزامي!' : 'Commercial Submission Date is required!');
 
-                  if (wizardForm.techDate && wizardForm.commDate && new Date(wizardForm.commDate) < new Date(wizardForm.techDate)) {
+                  if (wizardForm.techDate && wizardForm.commDate && Clock.parse(wizardForm.commDate) < Clock.parse(wizardForm.techDate)) {
                     conflicts.push(isAr ? 'تحذير زمني: تاريخ تقديم المالي يسبق تاريخ الفني.' : 'Date Conflict: Commercial Submission is scheduled before Technical Submission.');
                   }
-                  if (wizardForm.techDate && wizardForm.kickOffDate && new Date(wizardForm.kickOffDate) > new Date(wizardForm.techDate)) {
+                  if (wizardForm.techDate && wizardForm.kickOffDate && Clock.parse(wizardForm.kickOffDate) > Clock.parse(wizardForm.techDate)) {
                     conflicts.push(isAr ? 'تضارب: موعد الاجتماع التحضيري الداخلي بعد تاريخ تسليم الفني!' : 'Conflict: Internal Kick-off meeting is scheduled after Technical Submission.');
                   }
-                  if (wizardForm.techDate && wizardForm.alignmentDate && new Date(wizardForm.alignmentDate) > new Date(wizardForm.techDate)) {
+                  if (wizardForm.techDate && wizardForm.alignmentDate && Clock.parse(wizardForm.alignmentDate) > Clock.parse(wizardForm.techDate)) {
                     conflicts.push(isAr ? 'تضارب: اجتماع التنسيق والمطابقة الأول مبرمج بعد تاريخ المزايدة!' : 'Conflict: 1st Alignment meeting is configured after Technical Submission.');
                   }
-                  if (wizardForm.siteVisitRequired && wizardForm.siteVisitDate && wizardForm.techDate && new Date(wizardForm.siteVisitDate) > new Date(wizardForm.techDate)) {
+                  if (wizardForm.siteVisitRequired && wizardForm.siteVisitDate && wizardForm.techDate && Clock.parse(wizardForm.siteVisitDate) > Clock.parse(wizardForm.techDate)) {
                     conflicts.push(isAr ? 'تحذير: تاريخ معاينة الموقع تم بعد انتهاء موعد تسليم العطاء الفني!' : 'Warning: Site Visit Date is planned after Technical Submission.');
                   }
 
@@ -1058,7 +1070,7 @@ export function TenderWizardModal({
               <div className="absolute top-1 bottom-1 left-4 rtl:left-auto rtl:right-4 w-0.5 border-l border-dashed border-gray-300" />
 
               {[
-                { key: 'received', labelEn: 'Tender Received', labelAr: 'تلقي العطاء وأبواب PMO', date: new Date().toISOString().split('T')[0], status: 'done' },
+                { key: 'received', labelEn: 'Tender Received', labelAr: 'تلقي العطاء وأبواب PMO', date: Clock.todayISO(), status: 'done' },
                 { key: 'kickOff', labelEn: 'Internal Kick-off', labelAr: 'الاجتماع التحضيري الداخلي', date: wizardForm.kickOffDate, status: wizardForm.kickOffDate ? 'okay' : 'empty', offset: rules.kickOffOffset },
                 { key: 'risk', labelEn: 'Risk Assessment Due', labelAr: 'تقييم مخاطر المشروع المالي', date: wizardForm.riskDueDate, status: wizardForm.riskDueDate ? 'okay' : 'empty', offset: rules.riskAssessmentOffset },
                 { key: 'quals', labelEn: 'Contract Qualifications', labelAr: 'الشروط والتحفظات القانونية', date: wizardForm.contractQualsDueDate, status: wizardForm.contractQualsDueDate ? 'okay' : 'empty', offset: rules.contractQualificationOffset },
@@ -1106,7 +1118,7 @@ export function TenderWizardModal({
                       <div className="flex items-center justify-between gap-1 mt-0.5">
                         <span className="text-[10px] font-bold font-mono text-gray-400">
                           {m.date ? (
-                            new Date(m.date).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { month: 'numeric', day: 'numeric', year: '2-digit' })
+                            Clock.parse(m.date).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { month: 'numeric', day: 'numeric', year: '2-digit' })
                           ) : (
                             isAr ? 'غير محدد' : 'Not set'
                           )}

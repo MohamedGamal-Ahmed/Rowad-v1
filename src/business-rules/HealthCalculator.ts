@@ -41,4 +41,12 @@ export class HealthCalculator {
   public evaluate(daysRemaining: number, isArchived: boolean = false, settings?: HealthSettings): HealthStatus {
     return this.strategy.calculate(daysRemaining, isArchived, settings);
   }
+
+  /**
+   * Static access method to evaluate health dynamically.
+   */
+  public static calculate(daysRemaining: number, isArchived: boolean = false, settings?: HealthSettings): HealthStatus {
+    const calc = new HealthCalculator();
+    return calc.evaluate(daysRemaining, isArchived, settings);
+  }
 }

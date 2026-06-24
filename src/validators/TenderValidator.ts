@@ -1,4 +1,5 @@
 import { Tender } from '../domain/pre-award/Tender';
+import { Clock } from '../services/Clock';
 
 export interface ValidationResult {
   isValid: boolean;
@@ -35,8 +36,8 @@ export class TenderValidator {
     }
 
     if (techDateStr && commDateStr) {
-      const techDate = new Date(techDateStr);
-      const commDate = new Date(commDateStr);
+      const techDate = Clock.parse(techDateStr);
+      const commDate = Clock.parse(commDateStr);
       if (isNaN(techDate.getTime())) {
         errors.push('Technical Submission Date is an invalid ISO date.');
       }

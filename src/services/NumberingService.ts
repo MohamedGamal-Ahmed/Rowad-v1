@@ -1,8 +1,9 @@
 import { NumberingSettings } from '../domain/administration/Settings';
+import { Clock } from './Clock';
 
 export class NumberingService {
   private static getYear(): string {
-    return new Date().getFullYear().toString();
+    return Clock.now().getFullYear().toString();
   }
 
   private static formatSeq(sequence: number, padLength: number = 3): string {

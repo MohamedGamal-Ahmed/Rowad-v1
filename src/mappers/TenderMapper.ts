@@ -4,6 +4,9 @@ import { RecordStatus } from '../enums/RecordStatus';
 import { WorkflowStatus } from '../enums/WorkflowStatus';
 import { Currency } from '../enums/Currency';
 import { Money } from '../domain/common/Money';
+import { Clock } from '../services/Clock';
+import { HealthCalculator } from '../business-rules/HealthCalculator';
+import { HealthStatus } from '../enums/HealthStatus';
 
 // Explicit Legacy Tender interface to map against
 export interface LegacyTender {
@@ -204,17 +207,15 @@ export class TenderMapper {
 
     // Days remaining and Health will be dynamically computed during UI integration,
     // but we support populating default fallback legacy values here.
-    const today = new Date('2026-06-22T05:25:00-07:00');
-    const targetDate = new Date(domain.timeline.submission.techSubmissionDate);
-    const diffTime = targetDate.getTime() - today.getTime();
-    const daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
+    const daysRemaining = Clock.diffInDays(domain.timeline.submission.techSubmissionDate);
+    const calculatedHealth = HealthCalculator.calculate(daysRemaining, recStatus === 'Archived');
+    
     let healthStr: 'Healthy' | 'Due Soon' | 'Overdue' | 'Archived' = 'Healthy';
-    if (recStatus === 'Archived') {
+    if (calculatedHealth === HealthStatus.ARCHIVED) {
       healthStr = 'Archived';
-    } else if (daysRemaining < 0) {
+    } else if (calculatedHealth === HealthStatus.OVERDUE) {
       healthStr = 'Overdue';
-    } else if (daysRemaining <= 7) {
+    } else if (calculatedHealth === HealthStatus.DUE_SOON) {
       healthStr = 'Due Soon';
     }
 

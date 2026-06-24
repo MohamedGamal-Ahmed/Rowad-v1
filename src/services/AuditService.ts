@@ -1,3 +1,5 @@
+import { Clock } from './Clock';
+
 export interface AuditLogPayload {
   action: 'Create Tender' | 'Archive Tender' | 'Workflow Transition' | 'Document Upload' | 'Status Change' | 'Financial Update';
   resourceId: string;
@@ -53,7 +55,7 @@ export class AuditService {
       action,
       resourceId,
       actor,
-      timestamp: new Date().toISOString(),
+      timestamp: Clock.now().toISOString(),
       previousValue,
       newValue,
       metadata

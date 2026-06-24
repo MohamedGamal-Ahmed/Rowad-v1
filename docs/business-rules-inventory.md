@@ -15,7 +15,7 @@ This inventory documents and maps every core business rule in the **ROWAD Enterp
 * **Settings Key**: `bidBondPercentage` (default: `2.0` or `0.02`)
 * **UI Components Consuming**: `TenderWizardModal.tsx`, `OngoingTenders.tsx` (Tender card metric overlays), `TenderFinancialTab.tsx`
 * **Repository Consuming**: None (evaluated dynamically)
-* **⚠️ Technical Debt**: Currently hardcoded as `0.02` multiplier in `TenderWizardModal.tsx`, `useTenderActions.ts`, and `OngoingTenders.tsx`. Scheduled to be refactored into the global settings object to consume dynamic admin offsets.
+* **Status**: Fully resolved in v1.3.0. Now consumes dynamic configuration values from `settings.financialSettings` via `FinancialsCalculator.calculateBidBond`. Obsolete code and duplicated hardcoded rules have been fully deleted.
 
 ---
 

@@ -7,6 +7,7 @@ import { Settings } from '../domain/administration/Settings';
 import { TimelineRules } from '../domain/administration/TimelineRules';
 import { AppConstants } from '../constants/AppConstants';
 import { TenderMapper, LegacyTender } from '../mappers/TenderMapper';
+import { Clock } from './Clock';
 
 export class TenderService {
   private repository: TenderRepository;
@@ -38,13 +39,10 @@ export class TenderService {
       );
 
       // 2. Solve days remaining
-      const today = new Date('2026-06-22T05:25:00-07:00');
-      const targetDate = new Date(tender.timeline.submission.techSubmissionDate);
-      const diffTime = targetDate.getTime() - today.getTime();
-      const daysRemaining = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+      const daysRemaining = Clock.diffInDays(tender.timeline.submission.techSubmissionDate);
 
       // 3. Solve dynamic health indicator
-      const derivedHealth = this.healthCalc.evaluate(daysRemaining, false, activeHealth);
+      const derivedHealth = HealthCalculator.calculate(daysRemaining, false, activeHealth);
 
       return {
         ...tender,

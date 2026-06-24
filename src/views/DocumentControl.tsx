@@ -7,6 +7,7 @@ import {
 import { BiText } from '../components/BiText';
 import { Settings } from '../domain/administration/Settings';
 import { NumberingService } from '../services/NumberingService';
+import { Clock as AppClock } from '../services/Clock';
 
 export interface DocumentRecord {
   id: string;
@@ -190,7 +191,7 @@ export function DocumentControl({
       projectName: { en: projectNameEn, ar: projectNameAr },
       sender: sender || 'Rowad General Contracting',
       recipient: recipient || 'Lead Representative',
-      dateReceived: new Date().toISOString().split('T')[0],
+      dateReceived: AppClock.todayISO(),
       status: { en: statusEn || 'Archived', ar: statusAr || 'تمت الأرشفة بنجاح' },
       priority,
       version: version || 'Rev 1.0'

@@ -9,6 +9,7 @@ import {
 import { BiText } from '../components/BiText';
 import { Settings } from '../domain/administration/Settings';
 import { NumberingService } from '../services/NumberingService';
+import { Clock as AppClock } from '../services/Clock';
 
 export interface ExecutionRecord {
   id: string;
@@ -253,7 +254,7 @@ export function ProjectExecution({
         records.length + 1
       ),
       projectName: { en: projNameEn, ar: projNameAr },
-      submittedDate: new Date().toISOString().split('T')[0],
+      submittedDate: AppClock.todayISO(),
       valueAED: submitValue ? (submitValue.startsWith('AED') ? submitValue : `AED ${submitValue}`) : 'N/A',
       status: { en: statusEn, ar: statusAr },
       health: submitHealth,

@@ -60,6 +60,19 @@ To run immediate validation sweeps, consult [Immediate Diagnostics in the Quick 
 * Generated the master [Architecture Baseline Report v1.0](/docs/ai/ARCHITECTURE_BASELINE_v1.0.md) detailing Service matrices, Repository readiness parameters, settings dynamic parameters, and Technical Debt v2 indexes.
 * Designed the database schemas, FastAPI endpoints, and Pydantic DTOs required to transition the project to a live PostgreSQL relational database during the next sprint.
 
+### ✅ Milestone 8: Frontend Consolidation and Architectural Cleanup (v1.3.0)
+* **Unified Clock Integration**: Implemented a single, application-wide `Clock` service in `src/services/Clock.ts`, eliminating all arbitrary `new Date()` allocations and supporting deterministic mocking for date comparisons.
+* **Dynamic Health Evaluation**: Consolidated all project and tender health checks to consume `HealthCalculator.calculate()` and dynamically read configuration values from `HealthSettings`, removing hardcoded comparisons.
+* **Dead Code Pruning**: Eliminated five redundant, unused pre-award hooks (`useTenderActions.ts`, `useTenderFilters.ts`, etc.) and duplicate timeline helper methods.
+* **Consolidated Persistence Pipeline**: Refactored `src/App.tsx` list-update mechanisms to ensure only modified entities are committed to repositories per transaction, maintaining a deterministic `UI -> Service -> Validator -> Mapper -> Repository -> Persistence` write pipeline.
+
+### ✅ Milestone 9: Ongoing Tenders Module Refactoring & Feature Decomposition (v1.4.0)
+* **God Component Elimination**: Refactored the massive 1,976-line `OngoingTenders.tsx` master component into a lightweight orchestrator page of under 150 lines.
+* **Core Hooks Encapsulation**: Isolated state management, search, and multidimensional filter logic inside a new single-responsibility custom hook `useOngoingTenders.ts`.
+* **Visual Component Isolation**: Modularized master-detail layouts into explicit sub-components (`TenderToolbar`, `TenderKPICards`, `TenderFilters`, `TenderActions`, `TenderTable`, `TenderDetailsDrawer`, `TenderImportModal`, `TenderWizardModal`).
+* **100% Structural Consistency**: Maintained total visual fidelity, language translation registers, form validations, date offsets, and business rule calculators with zero functional regressions.
+
+
 ---
 
 ## 3. Sprint Roadmap (Pendings & Backlog)
