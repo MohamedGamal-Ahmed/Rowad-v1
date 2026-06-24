@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tender, TimelineRules, WizardFormState } from '../types';
-import { TimelineCalculator } from '../../../business-rules/TimelineCalculator';
-import { FinancialsCalculator } from '../../../business-rules/FinancialsCalculator';
+import { TimelineCalculator } from '../../../../business-rules/TimelineCalculator';
+import { FinancialsCalculator } from '../../../../business-rules/FinancialsCalculator';
 
 export function useTenderActions({
   lang,

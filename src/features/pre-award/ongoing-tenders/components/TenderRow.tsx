@@ -4,12 +4,13 @@ import { Tender } from '../types';
 import { BiText } from '../../../../components/BiText';
 
 interface TenderRowProps {
+  key?: string;
   t: Tender;
   isSelected: boolean;
   isChecked: boolean;
   isAr: boolean;
   lang: 'ar' | 'en';
-  onSelect: (id: string) => void;
+  onSelect: (id: string | null) => void;
   onToggleCheck: (id: string) => void;
   onShowAlert: (msg: string) => void;
 }

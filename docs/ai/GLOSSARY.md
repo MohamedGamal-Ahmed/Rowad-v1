@@ -1,22 +1,28 @@
-# ROWAD Enterprise - Domain Glossary
+# ROWAD Enterprise - Core Glossary Companion
 
-This reference lists all standard construction-grade definitions, financial acronyms, and operational modules utilized across the ROWAD Enterprise Platform.
+This vocabulary reference defines construction engineering terms, abbreviations, and modules used across the ROWAD platform.
+
+For database design shapes, integration maps, and API endpoints, refer to the [Living Product Specification (PROJECT_BOOK.md)](./PROJECT_BOOK.md).
 
 ---
 
-### Terminology Table
+## Terminology Directory
 
-| Term / Acronym | Definition | Context in ROWAD |
-| :--- | :--- | :--- |
-| **AED** | United Arab Emirates Dirham. The baseline corporate currency used to parse, balance, and aggregate entire project portfolios. | All financial and estimation values. |
-| **BOQ** | Bill of Quantities. A meticulous itemized list detailing structural materials, labor rates, and physical scopes of work. | Estimations and financial worksheets. |
-| **Bidding Bond** | Tender Bond. A financial guarantee issued by a bank to verify that the bidder will execute the contract if awarded. Defaults to exactly **2.0%** of proposal value. | Pre-Award wizard planning. |
-| **Claim** | Request for compensation (financial or schedule extension) arising from unforeseen site variations or delays. | Post-Award execution ledgers. |
-| **EDMS** | Electronic Document Management System. A central vault managing structural revisions, CAD drawings, transmittals, and correspondence logs. | Document Control View. |
-| **IPC** | Interim Payment Certificate. Progressive billing invoices issued regularly during construction reflecting completed physical site works. | Project Controls ledger. |
-| **Makers & Checkers** | Standard engineering audit flow requiring every action submitted by an author ("maker") to get audited by a designated reviewer ("checker"). | Workflow states & document processes. |
-| **NOC** | No Objection Certificate. A legal document issued by government departments of municipalities authorizing site works. | Project Controls ledger. |
-| **PMO** | Project Management Office. The central department certifying operations and timelines. | Corporate metrics & dashboards. |
-| **SPR** | Single Page Report. Executive reporting system detailing project delivery health, financial margins, and timeline status. Under ADR-011, these are dynamic, generated on-demand views. | Reporting & Analytics interfaces. |
-| **Tender** | Pre-award contract proposal created during actively studied phases, containing financial worksheets and milestone offset calculations. | Pre-Award module. |
-| **Variation Order (VO)** | An official amendment modifying the original scope of work, adjusted rates, or timeline constraints in an ongoing construction project. | Project Controls ledger. |
+| Term / Abbreviation | Definition & Role | Domain Context | Master Reference Link |
+| :--- | :--- | :--- | :--- |
+| **AED** | United Arab Emirates Dirham. The uniform corporate currency used to parse, balance, and report entire portfolios. | Dashboards, Post-Award | [Non-Functional Specs](./PROJECT_BOOK.md#4-non-functional-requirements) |
+| **Bidding Bond** | Tender Bond. Financial guarantee backing contractor capabilities. Auto-calculates dynamically at exactly **2.0%** of estimated value. | Pre-Award proposals | [Pre-Award Module](./PROJECT_BOOK.md#32-module-b-pre-award-proposals-tenders) |
+| **BOQ** | Bill of Quantities. Systematic ledger of structural materials, unit rates, and physical tasks. | Estimation panels | [Product Scope](./PROJECT_BOOK.md#2-product-scope) |
+| **Claim** | Progressive request for financial compensation or schedule expansions resulting from unforeseen site barriers. | Post-Award execution | [Project Controls Module](./PROJECT_BOOK.md#33-module-c-post-award-project-execution-project-controls) |
+| **EDMS** | Electronic Document Management System. Core folder vault managing drawing revisions, files, and engineering transmittals. | Document Control logs | [Document Control Module](./PROJECT_BOOK.md#34-module-d-engineering-document-control-document-control) |
+| **IPC** | Interim Payment Certificate. Progressive invoices issued periodically tracking completed physical site milestones. | Post-Award progress | [Project Controls Module](./PROJECT_BOOK.md#33-module-c-post-award-project-execution-project-controls) |
+| **Makers & Checkers** | Double-audit pipeline enforcing that creator submissions ("makers") get reviewed by separate authorities ("checkers"). | Document Control, Admin | [Document Control Module](./PROJECT_BOOK.md#34-module-d-engineering-document-control-document-control) |
+| **NOC** | No Objection Certificate. Legal municipal clearance certificates authorizing physical works. | Post-Award logging | [Project Controls Module](./PROJECT_BOOK.md#33-module-c-post-award-project-execution-project-controls) |
+| **SPR** | Single Page Report. Dynamic visual KPI summary illustrating timeline, margins, and health ratios compiled on-demand. | Dashboard analytics | [Executive Analytics Module](./PROJECT_BOOK.md#31-module-a-executive-analytics-dashboard-dashboard) |
+| **Variation Order (VO)** | Explicit contract amendments altering original design shapes, unit rates, or durations on active projects. | Post-Award execution | [Project Controls Module](./PROJECT_BOOK.md#33-module-c-post-award-project-execution-project-controls) |
+
+---
+
+## Conceptual Separations
+
+As detailed in the [Product Scope (PROJECT_BOOK.md#2-product-scope)](./PROJECT_BOOK.md#2-product-scope), ROWAD manages the engineering controls aspect of mega-infrastructure, delegating corporate General Ledger accounting directly to external ERP instances.

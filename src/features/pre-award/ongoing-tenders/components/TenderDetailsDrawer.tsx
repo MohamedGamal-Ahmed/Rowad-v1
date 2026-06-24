@@ -15,7 +15,10 @@ import {
 } from 'lucide-react';
 import { Tender } from '../types';
 import { TenderOverviewTab } from './TenderOverviewTab';
-import { FinancialsCalculator } from '../../../business-rules/FinancialsCalculator';
+import { TenderTimelineTab } from './TenderTimelineTab';
+import { TenderChecklistTab } from './TenderChecklistTab';
+import { TenderFinancialTab } from './TenderFinancialTab';
+import { FinancialsCalculator } from '../../../../business-rules/FinancialsCalculator';
 
 interface TenderDetailsDrawerProps {
   selectedTender: Tender | null;
@@ -233,208 +236,17 @@ export function TenderDetailsDrawer({
 
       {/* TAB 3: TIMELINE */}
       {activeTab === 'timeline' && (
-        <div className="space-y-4 animate-in fade-in duration-200">
-          <div className="space-y-1 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
-            <span className="text-[10px] text-gray-400 font-bold uppercase block">{isAr ? 'سجل الأيام المتبقية والموعد الفتح' : 'Submission Lifespan'}</span>
-            <div className="flex justify-between items-center text-sans mt-1">
-              <span className="text-xs font-semibold text-gray-500">{isAr ? 'تاريخ إغلاق العطاء:' : 'Closing Date Frame:'}</span>
-              <span className="font-mono text-sm font-bold text-brand-navy">{selectedTender.closingDate || '2026-08-30'}</span>
-            </div>
-          </div>
-
-          <span className="text-[11px] text-gray-400 uppercase font-black block tracking-widest font-sans pl-1">
-            {isAr ? 'مراحل الجدول الزمني للمزايدة' : 'Tender Milestone Roadmap'}
-          </span>
-
-          <div className="space-y-5 pt-1">
-            {[
-              {
-                label: isAr ? 'اجتماع انطلاق المشروع' : 'Internal Kick-off Meeting',
-                date: selectedTender.kickOffDate || '2026-06-15',
-                status: 'done',
-                step: 'K1',
-              },
-              {
-                label: isAr ? 'موعد تقديم الاستفسارات / المخاطر' : 'Risk Assessment Due',
-                date: selectedTender.riskDueDate || '2026-06-24',
-                status: 'done',
-                step: 'R2',
-              },
-              {
-                label: isAr ? 'تحفظات وتعليقات المزايدة' : 'Contract Quals Due',
-                date: selectedTender.contractQualsDueDate || '2026-07-01',
-                status: 'now',
-                step: 'C3',
-              },
-              {
-                label: isAr ? 'اجتماع المطابقة والاصطفاف' : '1st Alignment Meeting',
-                date: selectedTender.alignmentDate || '2026-07-05',
-                status: 'wait',
-                step: 'A4',
-              },
-              {
-                label: isAr ? 'اجتماع المتابعة والتقدير' : 'Intermediate Follow-up',
-                date: selectedTender.followUpDate || '2026-07-10',
-                status: 'wait',
-                step: 'F5',
-              },
-              { label: isAr ? 'تقديم العرض الفني' : 'Technical Submission', date: selectedTender.techSubmissionDate, status: 'wait', step: 'T6' },
-              { label: isAr ? 'تقديم العرض المالي' : 'Commercial Submission', date: selectedTender.commSubmissionDate, status: 'wait', step: 'M7' },
-            ].map((st, i) => {
-              return (
-                <div key={i} className="flex gap-3 text-[13px] items-start font-sans relative">
-                  <div className="flex flex-col items-center shrink-0 relative mt-0.5">
-                    <div
-                      className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-[11px] border transition-colors z-10
-                      ${
-                        st.status === 'done'
-                          ? 'bg-brand-navy text-white border-brand-navy font-semibold'
-                          : st.status === 'now'
-                          ? 'bg-amber-100 text-amber-800 border-amber-300 animate-pulse'
-                          : 'bg-gray-55 text-gray-400 border-gray-200'
-                      }
-                    `}
-                    >
-                      {st.step}
-                    </div>
-                    {i < 6 && (
-                      <div className={`w-0.5 h-11 bg-gray-100 absolute top-7 left-1/2 -translate-x-1/2 ${st.status === 'done' ? 'bg-brand-navy/50' : ''}`} />
-                    )}
-                  </div>
-                  <div className="flex-1 pt-0.5 ml-1.5 rtl:mr-1.5 rtl:ml-0">
-                    <div className="flex justify-between items-center font-extrabold text-brand-navy text-[13px]">
-                      <span>{st.label}</span>
-                      <span className="font-mono text-[10px] text-gray-400">{st.date}</span>
-                    </div>
-                    <span className="text-[10px] text-gray-400 block font-normal">
-                      {st.status === 'done'
-                        ? isAr
-                          ? 'تم تجاوز المرحلة بنجاح'
-                          : 'Phase cleared'
-                        : st.status === 'now'
-                        ? isAr
-                          ? 'المرحلة الحالية قيد الإنجاز'
-                          : 'Ongoing milestone priority'
-                        : isAr
-                        ? 'بانتظار التقدم الزمني'
-                        : 'Future scheduled stage'}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <TenderTimelineTab selectedTender={selectedTender} isAr={isAr} />
       )}
 
       {/* TAB 4: ACTIVITIES */}
       {activeTab === 'activities' && (
-        <div className="space-y-4 animate-in fade-in duration-200">
-          <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 space-y-3.5 text-sans">
-            <span className="text-[10px] text-gray-400 font-bold uppercase block">{isAr ? 'تدقيقات ومستندات الفحص الأولي' : 'Initial Feasibility Checklists'}</span>
-
-            <div className="space-y-2">
-              {[
-                { label: isAr ? 'استلام مستندات المزايدة والمخططات الأصلية' : 'Full RFP Documents Received', checked: selectedTender.checklistReceived ?? true },
-                { label: isAr ? 'دراسة وفحص المخططات الهندسية' : 'Technical Drawings Audited', checked: selectedTender.checklistDrawings ?? true },
-                { label: isAr ? 'مطابقة وتحديث جداول الكميات (BOQ)' : 'BOQ Cost Sheet Harmonized', checked: selectedTender.checklistBOQ ?? true },
-                {
-                  label: isAr ? 'مراجعة الميزات والمواصفات الفنية الخاصة بالإنشاء' : 'Technical Specifications Verified',
-                  checked: selectedTender.checklistSpecs ?? true,
-                },
-              ].map((item, index) => (
-                <div key={index} className="flex items-center gap-2.5 bg-white p-2.5 rounded-xl border border-gray-100 text-[13px]">
-                  {item.checked ? (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-                  ) : (
-                    <div className="w-5 h-5 rounded-full border-2 border-gray-200 shrink-0" />
-                  )}
-                  <span className={`font-semibold ${item.checked ? 'text-gray-700' : 'text-gray-400 line-through font-normal'}`}>{item.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 space-y-2 text-sans">
-            <span className="text-[10px] text-gray-400 font-bold uppercase block">{isAr ? 'معاينة الموقع والزيارات الميدانية' : 'Site Visit Verification Details'}</span>
-            <div className="bg-white p-3 rounded-xl border border-gray-50 text-[13px]">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-400 font-semibold">{isAr ? 'الزيارة الميدانية مطلوبة؟' : 'Site Visit Demanded?'}</span>
-                <span
-                  className={`px-2 py-0.5 rounded text-[11px] font-bold ${
-                    selectedTender.siteVisitRequired ?? true ? 'bg-amber-100 text-amber-800' : 'bg-gray-55 text-gray-550'
-                  }`}
-                >
-                  {selectedTender.siteVisitRequired ?? true
-                    ? isAr
-                      ? 'نعم - إلزامي'
-                      : 'Yes - Mandatory'
-                    : isAr
-                    ? 'غير مطلوب'
-                    : 'No'}
-                </span>
-              </div>
-              {(selectedTender.siteVisitRequired ?? true) && (
-                <div className="flex justify-between items-center mt-2.5 border-t border-gray-50 pt-2.5">
-                  <span className="text-gray-400 font-semibold">{isAr ? 'موعد الزيارة المحدد:' : 'Scheduled Visit Date:'}</span>
-                  <span className="font-mono text-xs font-bold text-brand-navy">{selectedTender.siteVisitDate || '2026-06-30'}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <TenderChecklistTab selectedTender={selectedTender} isAr={isAr} />
       )}
 
       {/* TAB 5: FINANCIAL */}
       {activeTab === 'financial' && (
-        <div className="space-y-4 animate-in fade-in duration-200 text-sans">
-          <span className="text-[10px] text-gray-400 font-bold uppercase block pl-1">{isAr ? 'ورقة البيانات والمؤشرات المالية' : 'Financial Metrics & Estimative Target'}</span>
-
-          <div className="bg-gray-950 text-white rounded-2xl p-5 space-y-4 border border-brand-navy/10 shadow-sm font-mono text-[13px]">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-400 font-bold uppercase text-[10px]">{isAr ? 'القيمة التقديرية للمشروع (السعر المستهدف)' : 'Estimated Tender Value'}</span>
-              <span className="text-[15px] font-black text-white">{selectedTender.estimatedValue}</span>
-            </div>
-
-            <div className="flex justify-between items-center border-t border-white/5 pt-3.5">
-              <span className="text-gray-400 font-bold uppercase text-[10px]">{isAr ? 'كلفة التقدير الداخلية المتوقعة' : 'Internal Estimated Cost'}</span>
-              <span className="text-[14px] font-bold text-gray-300">{selectedTender.estimatedCost || 'N/A'}</span>
-            </div>
-
-            <div className="flex justify-between items-center border-t border-white/5 pt-3.5">
-              <span className="text-gray-400 font-bold uppercase text-[10px]">{isAr ? 'هامش الربح المتوقع' : 'Projected Margin Metrics'}</span>
-              <div className="text-right">
-                {(() => {
-                  const val = parseValue(selectedTender.estimatedValue);
-                  const cost = parseValue(selectedTender.estimatedCost || '');
-                  if (val && cost && val >= cost) {
-                    const margin = val - cost;
-                    const marginPct = (margin / val) * 100;
-                    return (
-                      <div>
-                        <span className="text-emerald-400 font-bold text-sm block">
-                          +{selectedTender.currency} {margin.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                        </span>
-                        <span className="text-[10px] text-emerald-400/85">({marginPct.toFixed(2)}% Margin)</span>
-                      </div>
-                    );
-                  }
-                  return <span className="text-gray-450">N/A</span>;
-                })()}
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center border-t border-white/5 pt-3.5">
-              <span className="text-gray-400 font-bold uppercase text-[10px]">{isAr ? 'قيمة خطابات الضمان المطلوبة (2%)' : 'Tender Bond Required (2%)'}</span>
-              <span className="text-emerald-400 text-sm font-black">{selectedTender.bondAmount}</span>
-            </div>
-
-            <div className="flex justify-between items-center border-t border-white/5 pt-3.5">
-              <span className="text-gray-400 font-bold uppercase text-[10px]">{isAr ? 'عملة حساب العطاء والمناقصة' : 'Reporting Currency Standard'}</span>
-              <span className="text-brand-red bg-red-500/10 border border-brand-red/20 px-2 py-0.5 rounded font-bold text-xs uppercase">{selectedTender.currency}</span>
-            </div>
-          </div>
-        </div>
+        <TenderFinancialTab selectedTender={selectedTender} isAr={isAr} />
       )}
 
       {/* TAB 6: DOCUMENTS */}

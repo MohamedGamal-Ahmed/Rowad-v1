@@ -1,52 +1,55 @@
-# ROWAD Enterprise - AI & Developer Quick Start Guide
+# ROWAD Enterprise - Developer Onboarding & Quick Start
 
-Welcome to the **ROWAD Enterprise Platform**. This guide provides a rapid 5-minute onboarding path explaining the core architecture, execution flows, and key constraints.
+Welcome to the **ROWAD Enterprise Platform**. This guide provides a rapid 5-minute onboarding path.
+
+For complete architectural mapping, structural database planning, and system strategies, consult the master [Living Product Specification (PROJECT_BOOK.md)](./PROJECT_BOOK.md).
 
 ---
 
-## 1. Core Architecture Blueprint
+## 1. Fast Diagnostics
 
-ROWAD separates structural business rules from decorative presentation layouts. The dependency flow is strictly unidirectional:
+Ensure system health before and after code changes by invoking:
+
+```bash
+# Compile and check TypeScript syntax & declarations
+npm run lint
+```
+
+Maintain **Zero TypeScript Errors** and **Zero ESLint Warnings**.
+
+---
+
+## 2. Dynamic Architecture Summary
+
+All files in this repository strictly adhere to Clean Architecture boundaries:
 
 ```
 [React View] ──► [Application Service] ──► [Repository Layer] ──► [Mapper] ──► [Pure Domain Model / Rules]
 ```
 
-* **React Components**: Strictly for rendering. They trigger actions and display state.
-* **Services**: Orchestrates database queries and business logic transactions.
-* **Repositories**: Manages local memory emulators, ready for REST API adapters.
-* **Mappers**: Bidirectional data translation between Domain aggregates and persistent legacy/DTO objects.
+* **UI Controllers**: Pure React files under `/src/views` and `/src/features` handle only visual layout. They list, sort, and display state using Tailwind CSS classes.
+* **Orchestration Services**: Services in `/src/services` handle state mutations, triggers, and query calculations.
+* **Calculators & Rules**: Immutable mathematical operations reside inside `/src/business-rules/`. 
+
+To understand detailed service orchestration dependencies, see the [Service Dependency Matrix](./PROJECT_BOOK.md#7-service-dependency-matrix).
 
 ---
 
-## 2. Immediate Diagnostic Checks
+## 3. The Onboarding Commandments (Must Never Break)
 
-To verify code health, execute:
+1. **Zero Calculations inside React**: All estimations, day offsets, status indicators, and currency conversions belong inside raw calculators or orchestration services.
+2. **Never Call Repositories directly from Views**: React UI cards must never know that databases, mappers, or repositories exist. Access them exclusively through services.
+3. **No Const Enums**: Declare standard TypeScript `enum` models. Verify that all standard imports reside at the top of file headers.
 
-```bash
-# Run the fast typescript compiler and linter
-npm run lint
-```
-
-Make sure that **Zero TypeScript Errors** and **Zero ESLint Warnings** are maintained.
+These rules are programmatically enforced. For detailed engineering guidelines, consult the [AI Collaboration Guide (PROJECT_BOOK.md#21-ai-collaboration-guide-mandatory-commandments)](#).
 
 ---
 
-## 3. The Coding Commandments (Must Never Break)
+## 4. Primary Development Paths
 
-1. **Zero Math inside React**: Calculations, offsets, currency formatting, and state formulas belong in `/src/business-rules/` or separate services.
-2. **Never Import Repositories directly in React**: UI elements must never know databases or repositories exist. Always invoke through `src/services/`.
-3. **No Const Enums**: Use standard TypeScript `enum` declarations. All imports must reside at the top of file headers.
+* **`DashboardService`**: Connects active pre-award estimates and post-award execution ledgers to deliver unified KPIs. Includes cache controllers.
+* **`TenderService`**: Connects proposal wizards to business guidelines.
+* **`ProjectControlsService`**: Tracks construction ledger transactions (IPCs, Claims, Variation Orders).
+* **`FinancialsCalculator` / `TimelineCalculator`**: Pure mathematical calculations.
 
----
-
-## 4. Key Orchestration Files
-
-* **`DashboardService`**: Resolves combined KPIs across pre-award plans and execution ledgers. Contains real-time cache configurations.
-* **`TenderService`**: Connects wizard data structures to validation rules and maps outputs to repositories.
-* **`ProjectControlsService`**: Manages site transaction structures (IPCs, Claims, Variation Orders).
-* **`FinancialsCalculator` / `TimelineCalculator`**: Pure typescript math libraries.
-
----
-
-Now, you are ready to begin contribution. Always verify system compilation using `compile_applet` before finalizing tasks.
+To begin implementation, refer to the [Functional Requirements by Module in the Master Book](./PROJECT_BOOK.md#3-functional-requirements-by-module).

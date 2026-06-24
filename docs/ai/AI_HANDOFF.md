@@ -1,48 +1,64 @@
 # ROWAD Enterprise - AI Handoff Document
 
-This document tracks the current sprint state, completed items, unresolved items, and instructions for incoming AI agents contributing to the next sprint.
+This log maps current system health, completed sprint milestones, pending tasks, and guidelines for future AI systems.
+
+For full coding criteria, known technical debts, and development commandments, see the [Living Product Specification (PROJECT_BOOK.md)](./PROJECT_BOOK.md).
 
 ---
 
-## 1. System Health Audit
+## 1. System Quality Audit
 
-* **Linter Status**: ✅ Passed smoothly without syntax or import errors.
-* **Compiler Status**: ✅ Successfully compiled and ready for deployment.
-* **Dependencies**: No newly added external node modules, preserving absolute stability.
+* **Linter Status**: ✅ Fully verified. High-speed TypeScript compilation returns zero errors.
+* **Compiler Status**: ✅ Successfully compiled and fully verified.
+* **Database Emulator Layer**: `localStorage` schemas run seamlessly with zero console outputs.
 
----
-
-## 2. Completed Milestones
-
-### ✅ Milestone 1: Domain-Driven Design (DDD) & Entities
-We have fully populated pure, framework-free entities in `src/domain/` mapping:
-* Pre-award aggregates (`Tender`, `Money`, `BilingualString`).
-* Post-award records (`ProjectControlsRecord`, `DocumentRecord`).
-
-### ✅ Milestone 2: Service Orchestration & Decoupling
-* Excluded all mathematical formulas and estimations from React.
-* Configured `DashboardService` to calculate totals, bonds, and safety ratios.
-* Built `TenderService` & `ProjectControlsService` to translate data lists smoothly.
-* Created pluggable service interfaces for `CacheService`, `LoggingService`, `PermissionService`, `SearchService`, and `AuditService`.
-
-### ✅ Milestone 3: UI Blueprints & Prepared Extensions
-* **Dashboard View**: Clean, high-contrast KPI panels powered by `DashboardService`.
-* **Ongoing Tenders View**: Formulated a modular 5-step wizard (General information, Assignments, Timeline, Financial Verification, Review & Submit) and mapped details panel to prepare modular conversion gateways.
-* **Document Control View**: Added structural registration cards and created a hot-pluggable engineering bar preparing downstream EDMS interfaces with zero visual regression.
-* **Project Controls View**: Clean ledger filtering of transactional vouchers.
+To run immediate validation sweeps, consult [Immediate Diagnostics in the Quick Start Guide](./QUICK_START.md#1-fast-diagnostics).
 
 ---
 
-## 3. Pending Tasks (Next Sprint)
+## 2. Completed Milestones (Current Sprint)
 
-1. **FastAPI & PostgreSQL Transition**: Transition from local emulators (`localStorage`) to resilient backend relational SQL endpoints.
-2. **Global Real-Time Search**: Map search entries across panels using the instantiated `SearchService`.
-3. **Pluggable Alerts Dispatching**: Connect actual providers to SMS and Teams APIs using `NotificationService`.
-4. **Makers-Checkers Workflow Approvals**: Enhance state transitions to fully validate permission roles before completing submission phases.
+### ✅ Milestone 1: Decoupled Domain-Driven Modeling
+* Domain models and bilingual VO keys isolated into `/src/domain`.
+* Structural conversion rules defined inside the Mapper layers, preserving view files.
+* For database planning structures, see [Database Planning (PROJECT_BOOK.md#11-database-planning--relational-schemas-erd)](./PROJECT_BOOK.md#11-database-planning--relational-schemas-erd).
+
+### ✅ Milestone 2: Orchestration Service Abstraction
+* Math and formulas extracted from component wrappers.
+* `DashboardService` coordinates total calculations, metrics caching, and combined commitments.
+* Created pluggable interfaces for `CacheService`, `SearchService`, and `AuditService`.
+* For dependent structures, refer to [Service Dependency Matrix (PROJECT_BOOK.md#7-service-dependency-matrix)](./PROJECT_BOOK.md#7-service-dependency-matrix).
+
+### ✅ Milestone 3: Presentation UI Refactoring
+* Core views redesigned into atomic presentation layers.
+* Created 5-step interactive proposal wizard under Pre-Award layouts with modular date calculators.
+* Introduced file metadata submittal trackers and integrated slide drawer elements under Document Control.
+
+### ✅ Milestone 4: Operations Center & Enterprise Calendar Architecture Specification
+* Structured a complete Operations Center design blueprint (`/docs/ui-blueprint/operations-calendar.md`), outlining layout specifications across its 8 multi-view tabs.
+* Designed a unified, read-only universal `CalendarEvent` data model which correlates events directly back to parent modules without duplication.
+* Established math-based conflict validation constraints (sequential chronology limits and dual-booking resource risks), workload meter scoring rules, and WCAG-compliant high-density color palettes.
+* Integrated specifications into the master Living Specification (`PROJECT_BOOK.md`), establishing clear data maps, inventory objects, and API contracts.
 
 ---
 
-## 4. Advice for the Next AI Assistant
-* **Do not modify the core business rules**: The formulas in `/src/business-rules/` and calculating pipelines are frozen. Keep them unchanged.
-* **Add new features inside the existing architecture**: Always follow the sequence `React -> Service -> Repo -> Mapper -> Domain`. Never bypass these layers.
-* **Verify before finalizing work**: Always run the build compiler (`compile_applet`) and the linter (`lint_applet`) before concluding.
+## 3. Sprint Roadmap (Pendings & Backlog)
+
+1. **PostgreSQL Relational Storage Migration**: Transition local browser storages to live Postgres databases. Follow [Database Planning Roadmap](./PROJECT_BOOK.md#11-database-planning--relational-schemas-erd).
+2. **OpenAPI API Integration**: Implement REST contracts detailed in [API Contract Planning](./PROJECT_BOOK.md#12-api-contract-planning).
+3. **Global Submittal Search**: Bind structural views to lookups via `SearchService`.
+4. **Active Notification Channels**: Implement live integrations with MS Teams and target SMTP gateways.
+
+To evaluate refactoring plans, consult the [Known Technical Debt Index (PROJECT_BOOK.md#20-known-technical-debt)](./PROJECT_BOOK.md#20-known-technical-debt).
+
+---
+
+## 4. Operational Commander Guide for incoming AI Assistants
+
+If you are an AI assistant tasked with continuing work on this codebase, you MUST adhere to these foundational constraints:
+
+1. **Review Reference Files First**: You must read `docs/ai/PROJECT_BOOK.md` before performing edit operations.
+2. **Zero In-View Math**: Do not write calculations inside React files. Business formulas belong inside `/src/business-rules/` and orchestration services.
+3. **No Unrequested Playground Features**: Do not add visual playgrounds or buttons unless they are directly requested by the user.
+
+For the binding developer commandments, review [AI Collaboration Guide (PROJECT_BOOK.md#21-ai-collaboration-guide-mandatory-commandments)](./PROJECT_BOOK.md#21-ai-collaboration-guide-mandatory-commandments).

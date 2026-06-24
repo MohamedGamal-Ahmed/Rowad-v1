@@ -1,34 +1,31 @@
-# ROWAD Enterprise - Business Rules Index
+# ROWAD Enterprise - Business Rules Index Reference
 
-This document catalogues every official policy calculation, mathematical formula, and state boundary locked inside the ROWAD enterprise kernel.
+This index catalogues official equations, milestone propagation offsets, and transaction rules.
 
----
-
-## 1. Pre-Award Proposal Planning Rules
-
-| ID | Title / Rule Name | Formula / State Boundary | Implementation Code |
-| :--- | :--- | :--- | :--- |
-| **BR-PRE-001** | Bidding Bond Calculation | $\text{Bond Amount} = \text{Estimated Tender Value} \times 2.0\%$ | `FinancialsCalculator.ts` |
-| **BR-PRE-002** | Milestone Date Propagation | Key milestones (Kickoff, Risk Assessments, Agreements) propagate automatically relative to the Technical Submission date using configured day offsets. | `TimelineCalculator.ts` |
-| **BR-PRE-003** | Standard Commercial Offset | Standard Commercial Submission date defaults precisely to **12 days** after the baseline Technical Submission date. | `TimelineCalculator.ts` |
-| **BR-PRE-004** | Dual Language Constraint | All projects, clients, departments, and tender categories require concurrent English and Arabic text input. | `TenderValidator.ts` |
+For complete inputs, validation criteria, and functional requirements, consult the [Living Product Specification (PROJECT_BOOK.md)](./PROJECT_BOOK.md).
 
 ---
 
-## 2. Post-Award Project Controls Rules
+## 1. Systemwide Calculations Directory
 
-| ID | Title / Rule Name | Formula / State Boundary | Implementation Code |
-| :--- | :--- | :--- | :--- |
-| **BR-CON-001** | Ledger Separation | Interim Payment Certificates (IPCs), Claims, and Variation Orders (VOs) are treated as separate ledger operations with distinct structural workflows. | `ProjectControlsMapper.ts` |
-| **BR-CON-002** | Single Page Reporting (SPR) | Executive Project Performance Reports (SPRs) are dynamic creations, synthesized on demand directly from current ledger states. Reports are never stored statically inside transactional schemas. | `ADR-011.md` / `DashboardService.ts` |
-| **BR-CON-003** | Currency Standarization | All execution values parse and summarize relative to the UAE Dirham (AED) base currency. | `FinancialsCalculator.ts` |
+| Rule ID | Title / Rule Name | Mathematical Formula | Implementation Target | Reference Link in Master Book |
+| :--- | :--- | :--- | :--- | :--- |
+| **BR-PRE-001** | Bidding Bond calculation | $\text{Bond Value} = \text{Estimated Tender} \times 2.0\%$ | `FinancialsCalculator.ts` | [Pre-Award Requirements](./PROJECT_BOOK.md#32-module-b-pre-award-proposals-tenders) |
+| **BR-PRE-002** | Milestone Date Propagation | Auto-propagate day offsets relative to Technical Proposal date | `TimelineCalculator.ts` | [Pre-Award Requirements](./PROJECT_BOOK.md#32-module-b-pre-award-proposals-tenders) |
+| **BR-PRE-003** | Commercial Offset Limit | Standard Commercial Date is Technical proposals date + **12 days** | `TimelineCalculator.ts` | [Pre-Award Requirements](./PROJECT_BOOK.md#32-module-b-pre-award-proposals-tenders) |
+| **BR-CON-002** | Currency Standardization | Converts all local vouchers dynamically to UAE Dirhams (AED) | `FinancialsCalculator.ts` | [Project Execution Requirements](./PROJECT_BOOK.md#33-module-c-post-award-project-execution-project-controls) |
+| **BR-CON-001** | Ledger Separation | Segregates transactional models (IPCs, Claims, VOs, NOCs) on DB schemas | `ProjectControlsRepository` | [Project Execution Requirements](./PROJECT_BOOK.md#33-module-c-post-award-project-execution-project-controls) |
+| **BR-DB-001** | Analytics Caching | Executive dashboard KPI views cache dynamically for **60 seconds** | `DashboardService.ts` | [Dashboard Requirements](./PROJECT_BOOK.md#31-module-a-executive-analytics-dashboard-dashboard) |
+| **BR-DOC-001** | Double-Audit checks | Makers-checkers approvals flow required prior to document releases | `DocumentService.ts` | [Document Control Requirements](./PROJECT_BOOK.md#34-module-d-engineering-document-control-document-control) |
 
 ---
 
-## 3. Operations & Audits Rules
+## 2. Policy Decoupling Constraints
 
-| ID | Title / Rule Name | Formula / State Boundary | Implementation Code |
-| :--- | :--- | :--- | :--- |
-| **BR-AUD-001** | Immutable Audit Trail | High-risk events (Tender Creation, Status Modification, Workflow Transitions) generate immutable audit logs sealed into the audit storage provider. | `AuditService.ts` |
-| **BR-AUD-002** | Role-Based Authorization | Access to edit financial columns or submit proposals requires corresponding Role permissions. Roles must never be hardcoded block patterns. | `PermissionService.ts` |
-| **BR-AUD-003** | Dashboard Caching | Executive dashboard KPIs are cached in memory for **60 seconds** to prevent database overload. Cache remains hot-swappable. | `CacheService.ts` |
+To ensure absolute design sustainability, all mathematics catalogued above are strictly barred from React UI components. Developers must enforce these decoupled interfaces:
+
+```
+[React View] ──► [Orchestration Service] ──► [Pure TypeScript Calculator]
+```
+
+To review physical repository mapping parameters, see the [Repository Mapping Matrix (PROJECT_BOOK.md#8-repository-mapping-matrix)](./PROJECT_BOOK.md#8-repository-mapping-matrix).

@@ -95,7 +95,7 @@ export function TenderTable({
                   isChecked={selectedRowIds.includes(t.id)}
                   isAr={isAr}
                   lang={lang}
-                  onSelect={onSelect}
+                  onSelect={id => onSelect(id)}
                   onToggleCheck={handleToggleCheck}
                   onShowAlert={onShowAlert}
                 />

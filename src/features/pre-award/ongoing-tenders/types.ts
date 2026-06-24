@@ -54,6 +54,7 @@ export interface Tender {
   checklistSpecs?: boolean;
   siteVisitRequired?: boolean;
   siteVisitDate?: string;
+  technicalNotes?: string;
 }
 
 export interface TimelineRules {

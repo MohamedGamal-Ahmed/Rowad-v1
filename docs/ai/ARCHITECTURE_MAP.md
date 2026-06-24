@@ -1,10 +1,14 @@
-# ROWAD Enterprise - Core Architecture Map
+# ROWAD Enterprise - Core Architecture & Diagrams Map
 
-This document visually maps the system architecture, directory structures, layer boundaries, and dynamic transaction flows.
+This visual companion maps layers, directory boundaries, and sequence operations. 
+
+For the complete service lists, repository maps, database roadmaps, and technical specifications, see the [Living Product Specification (PROJECT_BOOK.md)](./PROJECT_BOOK.md).
 
 ---
 
 ## 1. Directory Dependencies Map
+
+The dependency flow between project directions is strictly unidirectional, preventing circular reference warnings:
 
 ```mermaid
 graph TD
@@ -23,9 +27,13 @@ graph TD
   Mappers --> |Use Business Calculators| Calculators
 ```
 
+For domain aggregates and model definitions, refer to [Data Ownership Matrix (PROJECT_BOOK.md#6-data-ownership--schema-mapping-matrix)](./PROJECT_BOOK.md#6-data-ownership--schema-mapping-matrix).
+
 ---
 
 ## 2. Dynamic Sequence: Dashboard KPI Refresh
+
+This model charts the cached real-time performance aggregation managed by the application services:
 
 ```mermaid
 sequenceDiagram
@@ -53,9 +61,13 @@ sequenceDiagram
   React->>User: Render polished graphics & charts
 ```
 
+For analytical formulas and caching specifications, refer to [Functional Requirements by Module (PROJECT_BOOK.md#31-module-a-executive-analytics-dashboard-dashboard)](./PROJECT_BOOK.md#31-module-a-executive-analytics-dashboard-dashboard).
+
 ---
 
 ## 3. Dynamic Sequence: Proposal Wizard Submit
+
+This diagram maps the transaction verification pipeline when committing new pre-award estimations:
 
 ```mermaid
 sequenceDiagram
@@ -85,9 +97,13 @@ sequenceDiagram
   end
 ```
 
+For validator functions and step configurations, see the [Pre-Award Proposals Module Specs in PROJECT_BOOK.md](./PROJECT_BOOK.md#32-module-b-pre-award-proposals-tenders).
+
 ---
 
 ## 4. Layer Isolation Guardrails
 
-* **The UI Boundary**: React components are entirely isolated from low-level storage frameworks (SQL/REST, localStorage, or state machines).
-* **The Business Boundary**: All core models live inside pure TypeScript structures. No framework dependencies (React, state managers, etc.) are allowed here.
+* **Stateless Visuals**: React code remains isolated from storage engines or calculators.
+* **Pure Domain Core**: Models under `src/domain` remain fully isolated from external framework dependencies (React, state managers, persistence adapters).
+
+For detailed coding standards and structure guidelines, refer to [Coding Standards (PROJECT_BOOK.md#18-coding-standards)](./PROJECT_BOOK.md#18-coding-standards).
