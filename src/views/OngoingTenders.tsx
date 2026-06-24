@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { 
   Plus, FileText, Users, FileSignature, ArrowRight, ArrowLeft, 
   Briefcase, DollarSign, BarChart2, AlertTriangle, TrendingUp, TrendingDown, Clock, 
-  Activity, CheckCircle2, ChevronRight, Sparkles, Pin, X, Settings, Star, Layers, 
+  Activity, CheckCircle2, ChevronRight, Sparkles, Pin, X, Star, Layers, 
   MapPin, HardHat, FileSpreadsheet, Eye, Download, Check, ShieldAlert, Laptop, AlertCircle, Trash2, Send,
   UploadCloud, RefreshCw, Layers3, CheckSquare, PlusCircle, ClipboardList, Building2, Calendar
 } from 'lucide-react';
 import { BiText } from '../components/BiText';
-import { TimelineRules } from './Settings';
+import { Settings } from '../domain/administration/Settings';
 import { TimelineCalculator } from '../business-rules/TimelineCalculator';
 import { FinancialsCalculator } from '../business-rules/FinancialsCalculator';
 import { TenderWizardModal } from '../features/pre-award/ongoing-tenders/components/TenderWizardModal';
@@ -317,12 +317,12 @@ export function OngoingTenders({
   lang, 
   list, 
   onUpdateList,
-  timelineRules 
+  settings 
 }: { 
   lang: 'ar' | 'en'; 
   list: Tender[]; 
   onUpdateList: React.Dispatch<React.SetStateAction<Tender[]>>;
-  timelineRules?: TimelineRules;
+  settings: Settings;
 }) {
   const isAr = lang === 'ar';
 
@@ -373,13 +373,7 @@ export function OngoingTenders({
   }, [toastAlert]);
 
   // Guidelines offsets sourced from administration panel dynamics
-  const rules = timelineRules || {
-    kickOffOffset: -30,
-    riskAssessmentOffset: -21,
-    contractQualificationOffset: -14,
-    alignmentOffset: -10,
-    intermediateFollowUpOffset: -5
-  };
+  const rules = settings.timelineRules;
 
   interface WizardFormState {
     projectCode: string;
@@ -778,7 +772,7 @@ export function OngoingTenders({
 
     const parsedValue = FinancialsCalculator.parseToNumber(wizardForm.estValue);
     const parsedCost = FinancialsCalculator.parseToNumber(wizardForm.estCost);
-    const calculatedBond = parsedValue * 0.02; // 2% tender bid bond calculation
+    const calculatedBond = FinancialsCalculator.calculateBidBond(parsedValue, settings.financialSettings);
 
     const createdTender: Tender = {
       id: `t-wizard-${Date.now()}`,
@@ -1104,7 +1098,7 @@ export function OngoingTenders({
           onUpdateList={onUpdateList}
           setSelectedTenderId={setSelectedTenderId}
           setToastAlert={setToastAlert}
-          timelineRules={timelineRules}
+          settings={settings}
           list={list}
         />
       )}

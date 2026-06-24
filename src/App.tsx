@@ -6,7 +6,8 @@ import { ProjectProfile } from './views/ProjectProfile';
 import { OngoingTenders, initialTenders, Tender } from './views/OngoingTenders';
 import { ProjectExecution, ExecutionRecord, mockExecutionData } from './views/ProjectExecution';
 import { DocumentControl, DocumentRecord, mockDocuments } from './views/DocumentControl';
-import { SettingsView, TimelineRules } from './views/Settings';
+import { SettingsView } from './views/Settings';
+import { Settings } from './domain/administration/Settings';
 import { mockProjects } from './data';
 import { TenderService } from './services/TenderService';
 import { ProjectControlsService } from './services/ProjectControlsService';
@@ -26,24 +27,76 @@ export default function App() {
   const [executionRecords, setExecutionRecords] = useState<ExecutionRecord[]>(mockExecutionData);
   const [documentRecords, setDocumentRecords] = useState<DocumentRecord[]>(mockDocuments);
 
-  // Configurable administrative timeline rules
-  const [timelineRules, setTimelineRules] = useState<TimelineRules>(() => {
-    const saved = localStorage.getItem('preaward_timeline_rules');
+  // Configurable administrative settings
+  const [settings, setSettings] = useState<Settings>(() => {
+    const saved = localStorage.getItem('pmo_enterprise_settings');
     if (saved) {
       try { return JSON.parse(saved); } catch (e) {}
     }
+    
+    // Check and migrate legacy preaward timeline rules if they exist
+    let oldRules: any = {};
+    const oldSaved = localStorage.getItem('preaward_timeline_rules');
+    if (oldSaved) {
+      try { oldRules = JSON.parse(oldSaved); } catch (e) {}
+    }
+
     return {
-      kickOffOffset: -30,
-      riskAssessmentOffset: -21,
-      contractQualificationOffset: -14,
-      alignmentOffset: -10,
-      intermediateFollowUpOffset: -5
+      id: 'admin-settings',
+      userId: 'admin',
+      preferredLanguage: 'ar',
+      timelineRules: {
+        kickOffOffset: oldRules.kickOffOffset !== undefined ? oldRules.kickOffOffset : -30,
+        riskAssessmentOffset: oldRules.riskAssessmentOffset !== undefined ? oldRules.riskAssessmentOffset : -21,
+        contractQualificationOffset: oldRules.contractQualificationOffset !== undefined ? oldRules.contractQualificationOffset : -14,
+        alignmentOffset: oldRules.alignmentOffset !== undefined ? oldRules.alignmentOffset : -10,
+        intermediateFollowUpOffset: oldRules.intermediateFollowUpOffset !== undefined ? oldRules.intermediateFollowUpOffset : -5,
+        reminderDays: 3,
+        followUpDays: 5,
+        escalationDays: 7
+      },
+      financialSettings: {
+        bidBondPercentage: 2.0,
+        performanceBondPercentage: 10.0,
+        retentionPercentage: 10.0,
+        vatPercentage: 15.0,
+        advancePaymentPercentage: 10.0,
+        defaultCurrency: 'AED',
+        currencyDisplayMode: 'individual'
+      },
+      businessCalendar: {
+        country: 'Saudi Arabia',
+        region: 'Riyadh',
+        weekendDays: [5, 6], // Friday & Saturday
+        holidayDates: ['2026-09-23', '2026-02-22'], // National Day, Founding Day
+        workingHoursStart: '08:00',
+        workingHoursEnd: '17:00',
+        halfWorkingDays: [],
+        specialClosures: []
+      },
+      numberingSettings: {
+        projectFormat: 'PRJ-{YEAR}-{SEQ}',
+        tenderFormat: 'PA-{YEAR}-{SEQ}',
+        ipcFormat: 'IPC-{PROJECT}-{SEQ}',
+        claimFormat: 'CLM-{PROJECT}-{SEQ}',
+        voFormat: 'VO-{PROJECT}-{SEQ}',
+        nocFormat: 'NOC-{PROJECT}-{SEQ}',
+        documentFormat: 'DOC-{TYPE}-{SEQ}'
+      },
+      workloadSettings: {
+        maxTasksPerEngineer: 5,
+        warningThreshold: 80
+      },
+      healthSettings: {
+        dueSoonThresholdDays: 7,
+        overdueThresholdDays: 0
+      }
     };
   });
 
-  const handleUpdateRules = (newRules: TimelineRules) => {
-    setTimelineRules(newRules);
-    localStorage.setItem('preaward_timeline_rules', JSON.stringify(newRules));
+  const handleUpdateSettings = (newSettings: Settings) => {
+    setSettings(newSettings);
+    localStorage.setItem('pmo_enterprise_settings', JSON.stringify(newSettings));
   };
 
   // Modern Clean Architecture Syncer
@@ -57,11 +110,11 @@ export default function App() {
 
       const service = new TenderService();
       // Solve dynamic calculated dates, days remaining, and health indicators chronologically using persistent offsets
-      const legacyTenders = await service.getLegacyTenders(timelineRules);
+      const legacyTenders = await service.getLegacyTenders(settings);
       setTendersList(legacyTenders);
     }
     loadTenders();
-  }, [timelineRules]);
+  }, [settings]);
 
   // Load Project Controls records cleanly on component mount using service-managed repository layer
   useEffect(() => {
@@ -151,25 +204,27 @@ export default function App() {
               lang={lang} 
               list={tendersList}
               onUpdateList={handleUpdateTendersList}
-              timelineRules={timelineRules}
+              settings={settings}
             />
           ) : currentView === 'project-execution' ? (
             <ProjectExecution 
               lang={lang} 
               records={executionRecords}
               onUpdateRecords={handleUpdateRecordsList}
+              settings={settings}
             />
           ) : currentView === 'document-control' ? (
             <DocumentControl 
               lang={lang} 
               documents={documentRecords}
               onUpdateDocuments={setDocumentRecords}
+              settings={settings}
             />
           ) : currentView === 'settings' ? (
             <SettingsView 
               lang={lang}
-              rules={timelineRules}
-              onUpdateRules={handleUpdateRules}
+              settings={settings}
+              onUpdateSettings={handleUpdateSettings}
             />
           ) : (
             <div className="flex items-center justify-center h-full text-gray-400 p-8">

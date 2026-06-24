@@ -66,9 +66,9 @@ export class TenderMapper {
       case 'Critical': return Priority.CRITICAL;
       case 'High': return Priority.HIGH;
       case 'Medium': return Priority.MEDIUM;
-      case 'Low':
+      case 'Low': return Priority.LOW;
       default:
-        return Priority.LOW;
+        return Priority.MEDIUM;
     }
   }
 

@@ -3,6 +3,7 @@ import { TenderRepository } from '../repositories/TenderRepository';
 import { TenderValidator } from '../validators/TenderValidator';
 import { TimelineCalculator } from '../business-rules/TimelineCalculator';
 import { HealthCalculator } from '../business-rules/HealthCalculator';
+import { Settings } from '../domain/administration/Settings';
 import { TimelineRules } from '../domain/administration/TimelineRules';
 import { AppConstants } from '../constants/AppConstants';
 import { TenderMapper, LegacyTender } from '../mappers/TenderMapper';
@@ -22,15 +23,18 @@ export class TenderService {
   /**
    * Retrieves all tenders, automatically solving calculated timeline markers and health flags on-the-fly.
    */
-  public async getTenders(timelineRules?: TimelineRules): Promise<Tender[]> {
+  public async getTenders(settings?: Settings): Promise<Tender[]> {
     const list = await this.repository.getAll();
-    const activeRules = timelineRules || this.getFallbackRules();
+    const activeRules = settings ? settings.timelineRules : this.getFallbackRules();
+    const activeCalendar = settings ? settings.businessCalendar : undefined;
+    const activeHealth = settings ? settings.healthSettings : undefined;
 
     return list.map(tender => {
       // 1. Solve dynamic timelines chronologically
       const calculatedTimeline = TimelineCalculator.calculateMilestones(
         tender.timeline.submission.techSubmissionDate,
-        activeRules
+        activeRules,
+        activeCalendar
       );
 
       // 2. Solve days remaining
@@ -40,7 +44,7 @@ export class TenderService {
       const daysRemaining = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
 
       // 3. Solve dynamic health indicator
-      const derivedHealth = this.healthCalc.evaluate(daysRemaining, false);
+      const derivedHealth = this.healthCalc.evaluate(daysRemaining, false, activeHealth);
 
       return {
         ...tender,
@@ -55,8 +59,8 @@ export class TenderService {
   /**
    * Translates all active database domain aggregates into presentation legacy models to feed React.
    */
-  public async getLegacyTenders(timelineRules?: TimelineRules): Promise<LegacyTender[]> {
-    const domainTenders = await this.getTenders(timelineRules);
+  public async getLegacyTenders(settings?: Settings): Promise<LegacyTender[]> {
+    const domainTenders = await this.getTenders(settings);
     return domainTenders.map(t => TenderMapper.toLegacy(t));
   }
 
@@ -69,7 +73,7 @@ export class TenderService {
   }
 
   /**
-   * Validates and submits a tender aggregate into the PostgreSQL database.
+   * Validates and submits a tender aggregate into the database.
    */
   public async commitTender(tender: Tender): Promise<{ success: boolean; errors: string[] }> {
     const validation = TenderValidator.validate(tender);

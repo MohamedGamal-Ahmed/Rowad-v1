@@ -7,6 +7,8 @@ import {
   CalendarRange, Activity, CheckSquare, AlertTriangle
 } from 'lucide-react';
 import { BiText } from '../components/BiText';
+import { Settings } from '../domain/administration/Settings';
+import { NumberingService } from '../services/NumberingService';
 
 export interface ExecutionRecord {
   id: string;
@@ -93,11 +95,13 @@ export const mockExecutionData: ExecutionRecord[] = [
 export function ProjectExecution({ 
   lang, 
   records, 
-  onUpdateRecords 
+  onUpdateRecords,
+  settings
 }: { 
   lang: 'ar' | 'en'; 
   records: ExecutionRecord[]; 
   onUpdateRecords: React.Dispatch<React.SetStateAction<ExecutionRecord[]>>;
+  settings: Settings;
 }) {
   const isAr = lang === 'ar';
   const setRecords = onUpdateRecords;
@@ -242,7 +246,12 @@ export function ProjectExecution({
     const newRec: ExecutionRecord = {
       id: nextId,
       type: submitType,
-      code: submitCode || `${submitType.substring(0,3).toUpperCase()}-0${records.length + 1}`,
+      code: submitCode || NumberingService.generateRecordCode(
+        settings.numberingSettings,
+        submitType,
+        'ROWAD-PRJ',
+        records.length + 1
+      ),
       projectName: { en: projNameEn, ar: projNameAr },
       submittedDate: new Date().toISOString().split('T')[0],
       valueAED: submitValue ? (submitValue.startsWith('AED') ? submitValue : `AED ${submitValue}`) : 'N/A',

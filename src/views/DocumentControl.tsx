@@ -5,6 +5,8 @@ import {
   FileCheck2, CheckSquare, History, FileText
 } from 'lucide-react';
 import { BiText } from '../components/BiText';
+import { Settings } from '../domain/administration/Settings';
+import { NumberingService } from '../services/NumberingService';
 
 export interface DocumentRecord {
   id: string;
@@ -78,11 +80,13 @@ export const mockDocuments: DocumentRecord[] = [
 export function DocumentControl({ 
   lang, 
   documents, 
-  onUpdateDocuments 
+  onUpdateDocuments,
+  settings
 }: { 
   lang: 'ar' | 'en'; 
   documents: DocumentRecord[]; 
   onUpdateDocuments: React.Dispatch<React.SetStateAction<DocumentRecord[]>>;
+  settings: Settings;
 }) {
   const isAr = lang === 'ar';
   const setDocuments = onUpdateDocuments;
@@ -176,7 +180,11 @@ export function DocumentControl({
     const nextId = 'D-' + (documents.length + 1).toString().padStart(3, '0');
     const newDoc: DocumentRecord = {
       id: nextId,
-      code: code || `DOC-0${documents.length + 1}`,
+      code: code || NumberingService.generateDocumentCode(
+        settings.numberingSettings,
+        category,
+        documents.length + 1
+      ),
       title: { en: titleEn, ar: titleAr },
       category,
       projectName: { en: projectNameEn, ar: projectNameAr },

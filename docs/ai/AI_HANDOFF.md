@@ -50,16 +50,26 @@ To run immediate validation sweeps, consult [Immediate Diagnostics in the Quick 
 * Implemented the **Operations Command Panel** as a persistent sliding side bezel supporting real-time date adjustments, reassignments, comment logging, and drag-and-drop file uploads.
 * Completed full app compilation and TypeScript validations, registering 100% clean builds.
 
+### ✅ Milestone 6: Write Flow Audit & Settings Verification
+* Resolved all Priority mapping issues, ensuring 100% test coverage and alignment in test suite assertions.
+* Integrated `SettingsValidator` inside `/src/views/Settings.tsx` to trap vulnerability configurations (e.g. positive offsets) directly in the UI with live bilingual error reports.
+* Completed a thorough platform write flow audit, generating the master [Write Flow Verification Report](/docs/project-write-flow-verification.md) proving zero bypasses of our Clean Architecture / DDD layer.
+
+### ✅ Milestone 7: Enterprise Foundation Baseline v1.0 Certification
+* Freezed the current frontend architecture and verified every subsystem (Executive Dashboard, Pre-Award, Project Controls, Operations Center, Document Control, Administration).
+* Generated the master [Architecture Baseline Report v1.0](/docs/ai/ARCHITECTURE_BASELINE_v1.0.md) detailing Service matrices, Repository readiness parameters, settings dynamic parameters, and Technical Debt v2 indexes.
+* Designed the database schemas, FastAPI endpoints, and Pydantic DTOs required to transition the project to a live PostgreSQL relational database during the next sprint.
+
 ---
 
 ## 3. Sprint Roadmap (Pendings & Backlog)
 
-1. **PostgreSQL Relational Storage Migration**: Transition local browser storages to live Postgres databases. Follow [Database Planning Roadmap](./PROJECT_BOOK.md#11-database-planning--relational-schemas-erd).
-2. **OpenAPI API Integration**: Implement REST contracts detailed in [API Contract Planning](./PROJECT_BOOK.md#12-api-contract-planning).
+1. **PostgreSQL Relational Storage Migration**: Transition local browser storages to live Postgres databases. Follow [Database Planning Roadmap](./PROJECT_BOOK.md#11-database-planning--relational-schemas-erd) and [Baseline Transition Specifications](/docs/ai/ARCHITECTURE_BASELINE_v1.0.md#10-backend-preparation--database-schema-design-phase-10-review).
+2. **OpenAPI API Integration**: Implement REST contracts detailed in [API Contract Planning](./PROJECT_BOOK.md#12-api-contract-planning) and [FastAPI endpoints planning](/docs/ai/ARCHITECTURE_BASELINE_v1.0.md#rest-api-endpoints-planning-fastapi-routing).
 3. **Global Submittal Search**: Bind structural views to lookups via `SearchService`.
 4. **Active Notification Channels**: Implement live integrations with MS Teams and target SMTP gateways.
 
-To evaluate refactoring plans, consult the [Known Technical Debt Index (PROJECT_BOOK.md#20-known-technical-debt)](./PROJECT_BOOK.md#20-known-technical-debt).
+To evaluate refactoring plans, consult the [Known Technical Debt Index (PROJECT_BOOK.md#20-known-technical-debt)](./PROJECT_BOOK.md#20-known-technical-debt) and the updated [Technical Debt Report v2](/docs/ai/ARCHITECTURE_BASELINE_v1.0.md#8-technical-debt-report-v2-phase-8-review).
 
 ---
 
@@ -67,7 +77,7 @@ To evaluate refactoring plans, consult the [Known Technical Debt Index (PROJECT_
 
 If you are an AI assistant tasked with continuing work on this codebase, you MUST adhere to these foundational constraints:
 
-1. **Review Reference Files First**: You must read `docs/ai/PROJECT_BOOK.md` before performing edit operations.
+1. **Review Reference Files First**: You must read `docs/ai/PROJECT_BOOK.md` and [Architecture Baseline Report v1.0](/docs/ai/ARCHITECTURE_BASELINE_v1.0.md) before performing edit operations.
 2. **Zero In-View Math**: Do not write calculations inside React files. Business formulas belong inside `/src/business-rules/` and orchestration services.
 3. **No Unrequested Playground Features**: Do not add visual playgrounds or buttons unless they are directly requested by the user.
 

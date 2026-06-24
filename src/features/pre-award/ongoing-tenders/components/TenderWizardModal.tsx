@@ -10,6 +10,8 @@ import {
 import { Tender, WizardFormState, TimelineRules } from '../types';
 import { TimelineCalculator } from '../../../../business-rules/TimelineCalculator';
 import { FinancialsCalculator } from '../../../../business-rules/FinancialsCalculator';
+import { Settings } from '../../../../domain/administration/Settings';
+import { NumberingService } from '../../../../services/NumberingService';
 
 interface TenderWizardModalProps {
   onClose: () => void;
@@ -18,15 +20,17 @@ interface TenderWizardModalProps {
   onUpdateList: React.Dispatch<React.SetStateAction<Tender[]>>;
   setSelectedTenderId: (id: string | null) => void;
   setToastAlert: (alert: { type: 'warn' | 'success' | 'info'; message: string } | null) => void;
-  timelineRules?: TimelineRules;
+  settings: Settings;
   list: Tender[];
 }
 
-const getInitialWizardState = (): WizardFormState => {
-  const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+const getInitialWizardState = (settings: Settings, listLength: number): WizardFormState => {
+  const seq = listLength + 1;
+  const projectCode = NumberingService.generateProjectCode(settings.numberingSettings, seq);
+  const tenderNumber = NumberingService.generateTenderNumber(settings.numberingSettings, seq);
   return {
-    projectCode: `PC-2026-R${randomSuffix}`,
-    tenderNumber: `TN-${randomSuffix}`,
+    projectCode,
+    tenderNumber,
     projectNameAr: '',
     projectNameEn: '',
     locationEn: 'Riyadh - Saudi Arabia',
@@ -83,7 +87,7 @@ export function TenderWizardModal({
   onUpdateList,
   setSelectedTenderId,
   setToastAlert,
-  timelineRules,
+  settings,
   list,
 }: TenderWizardModalProps) {
   const [wizardStep, setWizardStep] = useState<number>(1);
@@ -94,24 +98,18 @@ export function TenderWizardModal({
         return JSON.parse(saved);
       } catch (e) {}
     }
-    return getInitialWizardState();
+    return getInitialWizardState(settings, list.length);
   });
 
   useEffect(() => {
     localStorage.setItem('preaward_wizard_draft', JSON.stringify(wizardForm));
   }, [wizardForm]);
 
-  const rules: TimelineRules = timelineRules || {
-    kickOffOffset: -14,
-    riskAssessmentOffset: -10,
-    contractQualificationOffset: -4,
-    alignmentOffset: -7,
-    intermediateFollowUpOffset: 4,
-  };
+  const rules = settings.timelineRules;
 
   const clearWizardDraft = () => {
     localStorage.removeItem('preaward_wizard_draft');
-    setWizardForm(getInitialWizardState());
+    setWizardForm(getInitialWizardState(settings, list.length));
     setWizardStep(1);
   };
 
@@ -125,7 +123,7 @@ export function TenderWizardModal({
       techDate: newTechDate,
     };
 
-    const milestones = TimelineCalculator.calculateMilestones(newTechDate, rules);
+    const milestones = TimelineCalculator.calculateMilestones(newTechDate, rules, settings.businessCalendar);
 
     if (!wizardForm.overriddenFields.kickOffDate) {
       calculated.kickOffDate = milestones.kickOffDate;
@@ -143,13 +141,7 @@ export function TenderWizardModal({
       calculated.followUpDate = milestones.followUpDate;
     }
     if (!wizardForm.overriddenFields.commDate) {
-      calculated.commDate = TimelineCalculator.calculateMilestones(newTechDate, {
-        kickOffOffset: 12,
-        riskAssessmentOffset: 12,
-        contractQualificationOffset: 12,
-        alignmentOffset: 12,
-        intermediateFollowUpOffset: 12,
-      }).kickOffDate;
+      calculated.commDate = TimelineCalculator.addDays(newTechDate, 12, settings.businessCalendar);
     }
 
     setWizardForm(prev => ({
@@ -257,7 +249,7 @@ export function TenderWizardModal({
 
     const parsedValue = FinancialsCalculator.parseToNumber(wizardForm.estValue);
     const parsedCost = FinancialsCalculator.parseToNumber(wizardForm.estCost);
-    const calculatedBond = parsedValue * 0.02;
+    const calculatedBond = FinancialsCalculator.calculateBidBond(parsedValue, settings.financialSettings);
 
     const createdTender: Tender = {
       id: `t-wizard-${Date.now()}`,

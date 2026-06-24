@@ -1,5 +1,6 @@
 import { Money } from '../domain/common/Money';
 import { Currency } from '../enums/Currency';
+import { FinancialSettings } from '../domain/administration/Settings';
 
 export class FinancialsCalculator {
   /**
@@ -8,6 +9,7 @@ export class FinancialsCalculator {
    */
   public static parseToNumber(formattedStr: string | undefined): number {
     if (!formattedStr) return 0;
+    // Strip everything except digits and decimal point
     const clean = formattedStr.replace(/[^\d.]/g, '');
     return parseFloat(clean) || 0;
   }
@@ -24,10 +26,8 @@ export class FinancialsCalculator {
 
   /**
    * Aggregates multiple Money objects into a single currency representation.
-   * (In real-world environments with FastAPI backend connection, currency exchange rates are queried)
    */
   public static sumAmounts(moneyItems: Money[], targetCurrency: Currency = Currency.AED): Money {
-    // Standard static conversions matching pre-defined mock currency weights for consistency
     const conversionToAED: Record<Currency, number> = {
       [Currency.AED]: 1.0,
       [Currency.SAR]: 0.98,
@@ -45,8 +45,43 @@ export class FinancialsCalculator {
     const finalAmount = totalAED / targetRate;
 
     return {
-      amount: Math.round(finalAmount * 100) / 100, // Round to 2 decimal places
+      amount: Math.round(finalAmount * 100) / 100,
       currency: targetCurrency
     };
+  }
+
+  /**
+   * BR-001: Calculates Bid Bond amount based on project value and settings.
+   */
+  public static calculateBidBond(value: number, settings: FinancialSettings): number {
+    return value * (settings.bidBondPercentage / 100);
+  }
+
+  /**
+   * BR-002: Calculates Performance Bond amount based on contract value and settings.
+   */
+  public static calculatePerformanceBond(contractValue: number, settings: FinancialSettings): number {
+    return contractValue * (settings.performanceBondPercentage / 100);
+  }
+
+  /**
+   * BR-003: Calculates Retention amount from certified payment and settings.
+   */
+  public static calculateRetention(certifiedAmount: number, settings: FinancialSettings): number {
+    return certifiedAmount * (settings.retentionPercentage / 100);
+  }
+
+  /**
+   * BR-004: Calculates VAT based on certified subtotal and settings.
+   */
+  public static calculateVAT(amount: number, settings: FinancialSettings): number {
+    return amount * (settings.vatPercentage / 100);
+  }
+
+  /**
+   * BR-017: Calculates Advance Payment based on contract value and settings.
+   */
+  public static calculateAdvancePayment(contractSum: number, settings: FinancialSettings): number {
+    return contractSum * (settings.advancePaymentPercentage / 100);
   }
 }
