@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   BarChart2, Compass, Briefcase, FileCheck2, Folder, Settings, 
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, Calendar
 } from 'lucide-react';
 import { BiText } from './BiText';
 
@@ -40,6 +40,7 @@ export function Sidebar({
     {
       title: { en: 'OPERATIONS', ar: 'إدارة العمليات والتنفيذ' },
       items: [
+        { icon: Calendar, label: { en: 'Operations Calendar', ar: 'التقويم التشغيلي الموحد' }, id: 'operations-center' },
         { icon: Briefcase, label: { en: 'Pre-Award Tenders', ar: 'المناقصات الجارية' }, id: 'ongoing-tenders', badge: 6 },
         { icon: FileCheck2, label: { en: 'Project Execution', ar: 'تنفيذ المشاريع الميدانية' }, id: 'project-execution' },
         { icon: Folder, label: { en: 'Document Control', ar: 'مراقبة الصادر والوارد' }, id: 'document-control' }

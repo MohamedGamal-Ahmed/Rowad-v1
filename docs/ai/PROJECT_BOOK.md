@@ -159,16 +159,16 @@ All other guides and logs are companion references that point directly to this m
 
 ### 3.6 Module F: Operations Center & Calendar (Operations Calendar)
 * **Purpose**: Serves as the high-density operational viewer, timeline tracker, and automated compliance analyzer.
-* **Current State**: Unified Operations Center dashboard featuring an integrated Calendar Heatmap view, Agenda list, Project Timeline, Resource Workload, compliance check panels, and meeting coordination registers.
-* **Future Vision**: Fully integrated bi-directional exchange with Microsoft Outlook and Teams with predictive AI scheduled intervals.
+* **Current State**: Fully implemented, production-ready, feature-decomposed command room modules. Integrates direct bidirectional updates to pre-award tender databanks, project controls records, and transmittals with recursive DAG date rescheduling propagation, active conflict diagnostics, personal priority views, and bilingually aligned visual cards.
+* **Future Vision**: Fully integrated bi-directional exchange with Microsoft Outlook and Teams with predictive AI scheduled intervals and natural language command parsing.
 
 | Requirement Subitem | Definition & Details |
 | :--- | :--- |
 | **Actors** | Estimators, Contracts Engineers, Project Managers, PMO Directors, Executives. |
-| **Inputs** | Read-only compiled event arrays from Tenders, Claims, NOCs, and IPCs; manual administrative and local meetings logs. |
-| **Outputs** | Workload heatmaps, horizontal project timelines, resource capacity meters, schedule compliance countdowns, conflict alerts. |
-| **Business Rules** | **BR-CAL-001**: The Calendar does not own or duplicate source records. All dates are evaluated dynamically at access. <br>**BR-CAL-002**: Automatic event synthesis propagates technical dates down to child milestones instantly. |
-| **Validation** | Checks dual-bookings (Resource Overlap), deadline chronology order, and milestone completeness before marking dates as resolved. |
+| **Inputs** | Read-only compiled event arrays from Tenders, Claims, NOCs, IPCs, and Submittals; DAG-based predecessor/successor relationships; manual administrative logs. |
+| **Outputs** | "My Work" daily tracker, soft density Operational Load grids, horizontal project Gantt timelines, Kanban workflow, resource capacity charts, schedule anomaly alerts, PMO KPIs. |
+| **Business Rules** | **BR-CAL-001**: The Calendar does not own or duplicate source records. All dates are evaluated dynamically at access. <br>**BR-CAL-002**: Automatic event synthesis propagates technical dates down to child milestones instantly. <br>**BR-CAL-003**: Modifications to predecessor event dates automatically recalculate and propagate down to successor nodes based on configured lag times. |
+| **Validation** | Checks dual-bookings (Resource Overlap), deadline chronology order, lag buffer violations, and milestone completeness before marking dates as resolved. |
 | **Dependencies** | `DashboardService`, `TenderRepository`, `ProjectControlsRepository`, `DocumentRepository`, `SearchService`. |
 
 ---
@@ -254,7 +254,7 @@ graph TD
 | **ProjectControlsRecord** | Project Controls | `ProjectControlsService` | `ProjectControlsRepository` | `project_controls_records` | `id` (UUID) | `parent_tender_id` (UUID), `project_id` (UUID) |
 | **DocumentRecord** | Document Control | `DocumentService` | `DocumentRepository` | `document_records` | `id` (UUID) | `associated_project_id` (UUID), `author_id` (UUID) |
 | **AuditLogEntry** | Admin Settings | `AuditService` | `AuditRepository` | `audit_log_records` | `id` (UUID) | `acting_user_id` (UUID) |
-| **CalendarEvent** | Operations Calendar | `DashboardService` / `TenderService` / `ProjectControlsService` | Synthesized on read | `operations_events` (Optional for custom markers/meetings) | `id` (UUID) | `source_id` (UUID), `project_id` (UUID), `owner_id` (UUID) |
+| **CalendarEvent** | Operations Calendar | `DashboardService` / `TenderService` / `ProjectControlsService` | Synthesized on read | `operations_events` (Optional for custom markers/meetings) | `id` (UUID) | `source_id` (UUID), `project_id` (UUID), `owner_id` (UUID), `predecessor_ids` (UUID[]), `successor_ids` (UUID[]) |
 
 ---
 
@@ -341,10 +341,11 @@ graph TD
 * **BiText**: Dual Arabic-English inline text block highlighting localization values. Used in: `/src/components/BiText.tsx`.
 
 ### 11.3 Operations & Calendar Controls
-* **CalendarHeatmap**: Renders dynamic intensity colors (Green, Yellow, Orange, Red) in week/month grids. Used in: `/src/features/operations-calendar/components/CalendarHeatmap.tsx`.
+* **OperationalLoadGrid**: Renders soft density shading (opacities of brand theme) based on scheduled daily events. Used in: `/src/features/operations-calendar/components/OperationalLoadGrid.tsx`.
 * **ResourceCapacityBar**: Horizontal progress load meter for resource tasks allocation. Used in: `/src/features/operations-calendar/components/ResourceCapacityBar.tsx`.
-* **TimelineTracks**: Gantt-style operations view highlighting schedules and overlay pins. Used in: `/src/features/operations-calendar/components/TimelineTracks.tsx`.
-* **ConflictOverlayAlert**: Inline warn alert dialog highlighting scheduling overflows. Used in: `/src/features/operations-calendar/components/ConflictOverlayAlert.tsx`.
+* **TimelineTracks**: Gantt-style operations view highlighting schedules, DAG relationships, and overlay pins. Used in: `/src/features/operations-calendar/components/TimelineTracks.tsx`.
+* **OperationsCommandPanel**: Immersive bezel-sliding detailed view containing project metadata, related documents/meetings, deep source links, and direct quick operations. Used in: `/src/features/operations-calendar/components/OperationsCommandPanel.tsx`.
+* **AICommandBar**: Natural language bar executing search filters across personal schedules and operational tasks. Used in: `/src/features/operations-calendar/components/AICommandBar.tsx`.
 
 ---
 

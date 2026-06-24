@@ -1,59 +1,72 @@
-# UI Blueprint: Operations Center & Calendar
+# UI Blueprint: Operations Center (Enterprise Control Room)
 
 ## 1. Executive Strategy & UX Vision
 
-### 1.1 The Operational Heartbeat of ROWAD
-Traditional digital calendars (Google Calendar, Microsoft Outlook) are designed for personal time management, chronological schedules, and single-resource availability. For mega-scale infrastructure engineering firms overseeing dozens of simultaneous tenders, complex site logistics, and hundreds of compliance dates, these tools fail catastrophically under load. Putting 500+ events per month into a standard month grid creates a visual cluster of overlapping text boxes that is completely unusable for contracts engineers and PMO directors.
+### 1.1 The Operational Command Center of ROWAD
+Traditional digital calendars (Google Calendar, Microsoft Outlook, FullCalendar) are designed for single-resource personal schedules and standard chronological listings. For large-scale infrastructure construction firms managing dozens of concurrent mega-projects, complex site logistics, and hundreds of compliance dates across the portfolio, these tools fail under density. Standard calendar grids with overlapping text lines become unreadable and lose business intelligence.
 
-The **ROWAD Operations Center (with integrated Operations Calendar)** is a high-density, business-intelligent operations dashboard. It aggregates event dates from **Pre-Award (Tenders)**, **Post-Award (Project Controls)**, and **Manual/Administrative Logs** into a single readable interface. Rather than trying to cram all event text boxes onto a single calendar view, it treats dates as **data points** backing integrated views, relying on **workload intensity heatmaps**, **operational timelines**, **engineer assignment matrices**, and **conflict alerts** to facilitate PMO decision-making.
+The **ROWAD Operations Center** is an high-density Enterprise Control Room. It is not an owner of data, but a unified viewer. It aggregates, filters, and analyzes event nodes generated across the platform from:
+* **Pre-Award (Tender Proposals & Submissions)**
+* **Project Controls (IPCs, Claims, Variation Orders, NOCs)**
+* **Document Control (Drawings, Engineering Submittals, Transmittals)**
+* **Manual Logs (Internal alignments, site visits, client negotiations)**
+
+Rather than overloading estimators and PMO directors with noisy visual blocks, the Operations Center focuses on **Operational Load density**, **Capacity balancing**, **Automated schedule propagation via Event Dependencies**, and **Immediate direct actions** directly on the active views.
 
 ```
-┌────────────────────────────────────────────────────────────────────────┐
-│                        OPERATIONS CENTER BOARD                         │
-├────────────────────────────────────────────────────────────────────────┤
-│  [ Tabs ]                                                              │
-│  ● Calendar   ○ Agenda   ○ Timeline   ○ Workload   ○ Deadlines   ...   │
-├───────────────────┬──────────────────────────────────┬─────────────────┤
-│ FILTERS & SIDEBAR │           CENTER ACTIVE VIEW     │ RIGHT DIAGNOSTICS|
-│                   │                                  │                 │
-│ ▢ Project NEOM    │   [  HEATMAP MONTH MATRIX  ]     │ Today's Agenda  │
-│ ▢ Project JED     │   Mon  Tue  Wed  Thu  Fri  ...   │ ■ Tech Subm.    │
-│ ▢ Pre-Award Est.  │   [02] [04] [18] [03] [01]       │ ■ NOC Deadline  │
-│ ▢ Post-Award Ctrl │   (G)  (Y)  (R )  (Y)  (G )      │                 │
-│ ▢ High Priority   │                                  │ Late Warnings   │
-│                   │   [  EXPANSION PANEL: JUN 23  ]  │ ⚠ 2 Claims Late │
-│ ▢ Save View       │   • 09:00 - PC-2026-RCL (Conflict)│                 │
-│                   │   • 14:00 - Jeddah PIP (Critical)│ Eng. Workload   │
-│ ▢ Reset Filter    │                                  │ Sara [██████] 15│
-└───────────────────┴──────────────────────────────────┴─────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ROWAD ENTERPRISE  │  Operations Center                                                                    Language: EN │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│  [TABS]  [● My Work]  [○ Calendar]  [○ Agenda]  [○ Timeline]  [○ Kanban]  [○ Workload]  [○ Conflicts]  [○ Analytics]  ... │
+├───────────────────────────────────────┬────────────────────────────────────────────────────────┬───────────────────────┤
+│ FILTERS & CONTROL PANEL               │ CENTER ACTIVE SCREEN (e.g. My Work Dashboard)          │ ACTIVE DIAGNOSTICS    │
+│ 🔎 Search Events...                   │ ◄ [ Prev ]  Today  [ Next ]   Search...                │                       │
+│ ───────────────────────────────────── │ 📅 MY WORK FOR TODAY                                   │ ⚙️ Resource Workload   │
+│ 📁 SAVED VIEWS                        │ ☑ [PC-NEOM] Complete Bidding Bond Review (09:00)       │ Ahmed   [░░░░░░░░    ] 08/20   │
+│ [★ Pre-Award Deadlines]               │ ☐ [PC-JED] Risk Assessment Submission (14:00)          │ Sara    [▒▒▒▒▒▒▒▒▒▒▒▒] 15/20   │
+│ [★ Active Claim Disputes]             │ ───────────────────────────────────────────────────────│ Mohamed [████████████] 19/20 ⚠ │
+│                                       │ ⌛ OVERDUE TASKS                                        │                       │
+│ 🏗️ PROJECTS                           │ ⚠ [PC-RCL] Commercial Tender Qualification [2 Days Late]│ ⌛ Critical Deadlines   │
+│ ☑ All Projects                        │ ───────────────────────────────────────────────────────│ - NEOM Tech (24h)     │
+│ ☒ NEOM Ring Road (NEOM)               │ 💬 RECENT NOTES & UPDATE LOGS                           │ - JED Claim #3 (48h)  │
+│ ☒ Jeddah Port (JED)                   │ - Sara: "Aramco requested additional soil test records"│                       │
+│                                       │                                                        │ ⚠ Active Conflicts    │
+│ 🏷️ EVENT MODULE                       │ ┌────────────────────────────────────────────────────┐ │ - Ahmed Dual-Booking  │
+│ ☑ Pre-Award Proposals                 │ │ [DDEPENDENCY SEQUENCE PATH]                        │ │ - Riyadh Chronology   │
+│ ☑ Project Controls Ledger             │ │ Tech Submission ──► Risk Check ──► Comm. Submission │ │                       │
+│                                       │ └────────────────────────────────────────────────────┘ │                       │
+└───────────────────────────────────────┴────────────────────────────────────────────────────────┴───────────────────────┘
+│ 💡 AI COMMAND BAR (FUTURE): [ "Show overdue claims for NEOM project"                                              ]  [Go]│
+└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
 ## 2. Tabs and Navigation Hierarchy
 
-The module is structured as a top-level **Operations Center** providing 8 functional tabs:
+The Operations Center features a 9-tab navigation system, tailored to provide diverse angles on construction operations:
 
-1. **Calendar Tab**: The primary high-density view. Integrates the Month, Week, and Smart Workload Heatmap grid.
-2. **Agenda Tab**: Fast linear chronicle tracking of events, grouped cleanly by week/day with status flags and immediate quick-actions.
-3. **Timeline Tab**: Horizontal project-centric Gantt/Schedule illustrating overlapping project tracks and upcoming 14-day/30-day deadlines.
-4. **Workload Tab**: Human resource allocation metric charts showing active engineer tasks, meeting counts, and saturation scores to resolve burnout.
-5. **Deadlines Tab**: Specialized PMO compliance view displaying countdown clocks, submission days-to-closing, and late risk assessments.
-6. **Meetings Tab**: Meeting coordinator center showing technical alignments, client kick-offs, negotiation clusters, and meeting room allocations.
-7. **Conflicts Tab**: Automated system diagnostics dashboard identifying dual-schedule engineers, project milestone overlaps, and missing documentation dependencies.
-8. **AI Insights Tab (Future Vision)**: predictive scheduling layer analyzing estimator success patterns and پیشنهاد optimally-spaced submission dates based on historical speed and risk parameters.
+1. **My Work Tab**: *Personalized Daily Hub*. Automatically filtered for the logged-in user, grouping priorities cleanly by timeframe and progress tracking lists.
+2. **Calendar Tab**: *Chronological Workload Matrix*. Highlights month/week chronological grids styled with **Operational Load** intensity indicators to track days of portfolio saturation.
+3. **Agenda Tab**: *Chronicle List View*. High-density, scrollable timeline logging events sequentially with nested meta tags, direct-action buttons, and source hyperlinks.
+4. **Timeline Tab**: *Portfolio Gantt Scheduler*. Visualizes project durations, milestone pins, and overlapping phase lifecycles on a horizontal axis over 14-day and 30-day spans.
+5. **Kanban Tab**: *Agile Operations Board*. Organizes systemwide events into workflow state columns (*To Do*, *In Progress*, *Waiting For Others*, *Under Review*, *Resolved*) to monitor bottleneck statuses.
+6. **Workload Tab**: *Capacity Balancing Meter*. Horizontal, color-shaded bar charts showing active coordinator/estimator weight indexes to prevent team burnout.
+7. **Conflicts Tab**: *Diagnostic Quality Guard*. Identifies real-time scheduling traps, engineer dual-bookings, missing prerequisite documents, and chronologically invalid milestone dates.
+8. **Analytics Tab**: *Operations PMO Dash*. Translates calendar metrics into visual KPIs: average submission lead times, historical claims response metrics, and project slip rates.
+9. **AI Assistant Tab (Future Vision)**: *Conversational Scheduling Oracle*. Integrates NLP parsing to adjust internal project milestone sequences and optimize estimator timelines based on historical performance models.
 
 ---
 
 ## 3. High-Density Event Data Model (TypeScript Schema)
 
-To avoid duplicating data structures across the platform, the Unified Event Model is a unified consumer object. The Calendar does **not** write or persist these schemas; it listens to read-only service outputs compiled from underlying datasets.
+To avoid duplicating data structures, the Calendar treats events as **synthesized, read-only consumer projections**. This unified model incorporates event deep links and dependency maps.
 
 ```typescript
 export enum EventModuleType {
   PRE_AWARD = 'pre-award',
   PROJECT_CONTROLS = 'project-controls',
-  ADMINISTRATIVE = 'administrative',
+  DOCUMENT_CONTROL = 'document-control',
   MANUAL = 'manual'
 }
 
@@ -70,9 +83,9 @@ export enum EventCategory {
   CLAIM_DEADLINE = 'claim_deadline',
   VO_DEADLINE = 'vo_deadline',
   NOC_DEADLINE = 'noc_deadline',
+  SUBMITTAL_REVIEW = 'submittal_review',
   INTERNAL_MEETING = 'internal_meeting',
-  REMINDER = 'reminder',
-  GENERAL_EVENT = 'general_event'
+  REMINDER = 'reminder'
 }
 
 export enum EventPriority {
@@ -85,14 +98,30 @@ export enum EventPriority {
 export enum EventStatus {
   PENDING = 'pending',
   IN_PROGRESS = 'in_progress',
-  SUBMITTED = 'submitted',
-  APPROVED = 'approved',
-  REJECTED = 'rejected',
+  WAITING_FOR_ME = 'waiting_for_me',
+  WAITING_FOR_OTHERS = 'waiting_for_others',
+  COMPLETED = 'completed',
   OVERDUE = 'overdue'
 }
 
+export interface EventNote {
+  id: string;
+  authorName: string;
+  timestamp: string;
+  text: string;
+}
+
+export interface EventAttachment {
+  id: string;
+  fileName: string;
+  fileSize: string;
+  uploadedBy: string;
+  uploadDate: string;
+  downloadUrl: string;
+}
+
 export interface CalendarEvent {
-  id: string;                      // Unique ID mapped from source
+  id: string;                         // Unique ID mapped from source
   title: {
     en: string;
     ar: string;
@@ -101,232 +130,243 @@ export interface CalendarEvent {
     en: string;
     ar: string;
   };
-  projectCode: string;             // Associated Project ID (e.g. PC-2026-NEOM)
+  projectCode: string;                // Mapped Project Code (e.g., PC-2026-NEOM)
   projectName: {
     en: string;
     ar: string;
   };
   module: EventModuleType;
   eventType: EventCategory;
-  ownerId: string;                 // Mapped Coordinator User ID
+  ownerId: string;                    // Primary responsible person
   ownerName: string;
-  assignedToIds: string[];         // Mapped Estimators & Engineers
+  assignedToIds: string[];            // List of engineers/estimators on task
   assignedToNames: string[];
   priority: EventPriority;
   status: EventStatus;
-  startDate: string;               // ISO date string (YYYY-MM-DD)
-  endDate: string;                 // ISO date string (YYYY-MM-DD)
-  startTime?: string;              // ISO time string (HH:MM:SS) Optional
-  endTime?: string;                // ISO time string (HH:MM:SS) Optional
-  reminderOffsetMinutes?: number;  // System alerts parameter
-  sourceId: string;                // References ID in parent module (e.g. Tender DB ID)
-  colorTheme: {
-    bg: string;                    // Tailwind BG class (e.g. bg-emerald-50)
-    border: string;                // Tailwind border class (e.g. border-emerald-200)
-    text: string;                  // Tailwind text class (e.g. text-emerald-800)
-    iconColor: string;             // Lucide SVG fill class
+  startDate: string;                  // ISO Date String (YYYY-MM-DD)
+  endDate: string;                    // ISO Date String (YYYY-MM-DD)
+  startTime?: string;                 // ISO Time String (HH:MM:SS) Optional
+  endTime?: string;                   // ISO Time String (HH:MM:SS) Optional
+  
+  // Dependency DAG Mapping
+  predecessorIds: string[];           // Event IDs that must complete first
+  successorIds: string[];             // Event IDs triggered by this event
+  lagDays?: number;                   // Required buffer spacing between tasks
+  
+  // Deep Linking Metadata
+  sourceId: string;                   // Internal ID in parent database
+  deepLinkPath: string;               // URL path pointing to source (e.g., /pre-award/tenders/42)
+  deepLinkLabel: {
+    en: string;
+    ar: string;
   };
-  lucideIconName: string;          // Icon lookup tag (e.g., "ShieldAlert")
-  notes?: string;                  // Dynamic audit remarks or meeting notes
-  hasConflict: boolean;            // Evaluated by system rule analyzer during load
+  
+  // Interactive Elements
+  notes: EventNote[];                 // Inline logged remarks
+  attachments: EventAttachment[];     // Attached engineering sheets or proofs
+  hasConflict: boolean;               // Calculated dynamically on read
+  
+  colorTheme: {
+    bg: string;                       // Fluent soft background (e.g., bg-slate-50)
+    border: string;                   // Border highlight (e.g., border-slate-200)
+    text: string;                     // Core text (e.g., text-slate-800)
+    iconColor: string;
+  };
+  lucideIconName: string;             // Icon lookup tag
 }
 ```
 
 ---
 
-## 4. UI Layout & Wireframe Specifications
+## 4. Tab Component Specifications
 
-### 4.1 Master Frame Structure
-The Operations Center adopts a three-pane layout framed by responsive bottom visualizers and top tab selection lists.
-
-```
-┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│  ROWAD ENTERPRISE  │  Operations Center                                                                    Language: EN │
-├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│  [TABS]  [● Calendar]  [○ Agenda]  [○ Timeline]  [○ Workload]  [○ Deadlines]  [○ Meetings]  [○ Conflicts]  [○ AI Insights]│
-├───────────────────────────────────────┬────────────────────────────────────────────────────────┬───────────────────────┤
-│ FILTERS & VIEW CONTROLLER             │ CENTER SCREEN CALENDAR MATRIX (e.g. June 2026)         │ ACTIVE DIAGNOSTICS    │
-│                                       │ ◄ [ Prev ]  Today  [ Next ]   Search...       [Month▼] │                       │
-│ 🔎 Search Events...                   ├────────────────────────────────────────────────────────┤ 📅 Today's Agenda      │
-│                                       │ MON     TUE     WED     THU     FRI     SAT     SUN     │ - 09:00: Tech Comm    │
-│ 📁 SAVED VIEWS                        │         1       2       3       4       5       6       │   NEOM Ring (Critical)│
-│ [★ Pre-Award Deadlines]               │        (G)     (G)     (Y)     (O)     (G)     (G)      │                       │
-│ [★ Claim Submissions]                 │ ───────┼───────┼───────┼───────┼───────┼───────┼───────│ - 14:00: NOC Review   │
-│                                       │ 7       8       9       10      11      12      13      │   Jeddah Pipeline     │
-│ 🏗️ PROJECTS                           │(G)     (R!)    (Y)     (G)     (Y)     (G)     (G)      │                       │
-│ ☑ All Projects                        │        [ ⚠ Dual Booking Risk Warning ]                 │                       │
-│ ☒ NEOM Infrastructure (NEOM)          │ ───────┼───────┼───────┼───────┼───────┼───────┼───────│ ⌛ Overdue Warnings    │
-│ ☒ Jeddah Pipeline (JED)               │ 14      15      16      17      18      19      20      │ - ⚠ Risk Assessment   │
-│                                       │(G)     (G)     (G)     (R!)    (G)     (G)     (G)      │   PC-2026-RCL (2d Late)│
-│ 🏷️ EVENT MODULE                       │                                                        │                       │
-│ ☑ Pre-Award Proposals                 │ [ DAY DETAIL EXPANSION: June 8, 2026 ]                 │ ⚙️ Resource Workload   │
-│ ☑ Project Controls Ledger             │ ┌────────────────────────────────────────────────────┐ │ Sara   [████████] 15  │
-│                                       │ │ • 09:00 - Pre-Award: Technical Submission           │ │ Ahmed  [████] 8       │
-│ ⚠ PRIORITY LEVEL                      │ │   Project: JED | Assigned: Ahmed | Priority: Critical│ │ Mohamed[██████████]20 │
-│ ☐ Critical   ☐ High   ☐ Medium  ☐ Low │ │   ⚠ Alert: Ahmed is also scheduled for Neom meeting│ │                       │
-│                                       │ └────────────────────────────────────────────────────┘ │                       │
-│ 👤 ACCOUNT OWNER                      │ ───────────────────────────────────────────────────────│                       │
-│ ☑ All Estimators                      │ 21      22      23      24      25      26      27      │                       │
-│                                       │(G)     (Y)     (Y)     (Y)     (G)     (G)     (G)      │                       │
-└───────────────────────────────────────┴────────────────────────────────────────────────────────┴───────────────────────┘
-│ BOTTOM PERFORMANCE COMPASS: Project Operations Timeline                                                                │
-│ Project Name     │ Day -5     Day -4     Day -3     Day -2     Day -1  │ TODAY  │ Day +1    Day +2     Day +3     Day +4    │
-│ ─────────────────┼─────────────────────────────────────────────────┼────────┼──────────────────────────────────────────│
-│ PC-2026-NEOM     │ [========== Risk Assessment Check ==========]   │        │     [==== Commercial Prep ====]          │
-│ PC-2026-JED      │                                                 │        │              [★ Technical Submission]     │
-└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 5. UI Component Specifications (Tab by Tab)
-
-### 5.1 Calendar Tab (High-Density Workload Grid)
-* **Goal**: Enable visual scanning showing days of massive operational risk versus days of open capacity without overwhelming card grids.
-* **Workload Heatmap System**:
-  * Instead of drawing 15 overlapping text strips in a day box, days are color-weighted dynamically:
-    * **Emerald Green (Low Workload)**: 0 to 2 event records.
-    * **Amber Yellow (Medium Workload)**: 3 to 5 event records.
-    * **Orange (High Workload)**: 6 to 9 events.
-    * **Ruby Red (Critical Operations Day)**: 10+ events, or *any* day containing a Deadline Overlap or Dual-Booking conflict. Matches high contrast priority indicators.
-  * *Micro-interactions*: Hovering over a heat day shows a tooltip summarising event categories (e.g. "3 Submissions, 2 Meetings"). Clicking expands a drawer below the row directly, revealing the detailed interactive list.
-
-### 5.2 Agenda Tab (Linear Chronicle Controls)
-* **Goal**: A structured list layout optimized for contractors scrolling through action lists.
-* **Component Structures**:
-  * Grouped chronologically: *Today, Tomorrow, Upcoming this week, Next week*.
-  * Interactive components: Each line contains inline quick-action checks (e.g., "Mark NOC approved", "Toggle Submission Done"), and dynamic metadata tags showing the owning module (Pre-Award, Controls).
-
-### 5.3 Timeline Tab (Operations Gantt Dashboard)
-* **Goal**: Provide a horizontal view mapping multiple live projects over 14-day and 30-day lookaheads.
+### 4.1 My Work Tab (Personal Operations Hub)
+* **Goal**: Provide a focused personal list for the logged-in user to see their immediate actions.
 * **Layout Design**:
-  * Rows track specific infrastructure assets (NEOM, Airport, JED).
-  * Horizontal timeline blocks illustrate running preparation phases (e.g., "Bidding preparation block running from Jun 1 to Jun 12").
-  * Interspersed milestone pins (indicated with sharp flags and custom category emblems) point to exact submission and delivery hours.
+  * Centered linear dashboard divided into 7 distinct sections:
+    1. **Today**: Immediate critical items due or scheduled for today.
+    2. **Tomorrow**: Preparation items for the next day.
+    3. **This Week**: Medium-term schedule objectives.
+    4. **Overdue**: Late compliance documents, expired NOC approvals, or missed tender milestones.
+    5. **Waiting For Me**: Workflow approvals (e.g., PMO Check signature) blocked on the logged-in user.
+    6. **Waiting For Others**: Items where the user is an owner, but blocked on external input.
+    7. **Completed Today**: Feedback log showing finished items from the current shift.
+  * **Micro-interactions**: Direct inline tick-boxes to complete, change dates, reassign, or add notes immediately without screen transitions.
 
-### 5.4 Workload Tab (Engineering Capacity Index)
-* **Goal**: Visual balancing of PMO staff resources to isolate bottlenecks.
+### 4.2 Calendar Tab & "Operational Load" Grid
+* **Goal**: Enable visual scanning showing days of high operational risk and days of open capacity.
+* **Operational Load Indicator**:
+  * Traditional month grids crowd multiple colorful boxes in a small square, creating visual clutter.
+  * The Operational Load system replaces text boxes with a **Soft Density Shading Indicator** mapped to the day background:
+    * **Empty / Zero Load**: Clear background with soft grid lines.
+    * **Low Shading (1-3 events)**: Very light brand tint (e.g., `bg-slate-50/60`).
+    * **Medium Shading (4-7 events)**: Soft pastel tint (e.g., `bg-slate-100/80` or `bg-blue-50/50`).
+    * **High Shading (8-11 events)**: Subtle textured slate tint (e.g., `bg-slate-200` or `bg-blue-100/70`).
+    * **Critical Saturation (12+ events or active Conflict alerts)**: Distinct warning tint (e.g., soft warm amber `bg-amber-100/80` with a sharp border indicator).
+  * Clicking a day expands an inline details list immediately below that row, using a smooth sliding panel transition.
+
+### 4.3 Timeline Tab (Operations Gantt Dashboard)
+* **Goal**: Map multiple projects horizontally over 14-day and 30-day lookaheads.
+* **Layout Design**:
+  * Left column lists active projects (e.g., PC-2026-NEOM).
+  * Right column contains horizontal Gantt tracks illustrating running preparation phases.
+  * Milestone flags (indicated with sharp categories) point to exact submission and delivery hours.
+  * Dependency lines (curved visual paths) link predecessor and successor milestones. Clicking a path highlights the schedule chain.
+
+### 4.4 Kanban Tab (Agile Operations Board)
+* **Goal**: Agile visualization of operational tasks across stages.
+* **Layout Design**:
+  * Columns represent statuses: **To Do**, **In Progress**, **Waiting For Others**, **Under Review**, **Resolved**.
+  * Cards contain: Project code, priority indicators, days-to-deadline, and primary owner avatar.
+  * Drag-and-drop operations automatically shift statuses on parent modules (e.g., dragging an IPC card from "In Progress" to "Under Review" triggers a transmittal review record in the Document repository).
+
+### 4.5 Workload Tab (Engineering Capacity Index)
+* **Goal**: Visual balancing of PMO staff resources to identify and isolate bottlenecks.
 * **Integration System**:
   * Generates horizontal progress bars for every estimator and contracts engineer in the division.
-  * Tracks calculation score: $\text{Weight Score} = (\text{Meetings} \times 1.0) + (\text{Active Tenders Studied} \times 4.0) + (\text{Due Submissions this week} \times 3.0)$.
-  * Highlighting: Saturation bars exceeding critical levels trigger red warnings ("Overloaded: Sara has 18 critical tasks active").
+  * Capacity Calculation Score:
+    $$\text{Capacity Index} = (\text{Meetings} \times 1) + (\text{Active Tenders Studied} \times 4) + (\text{Due Submissions this week} \times 3)$$
+  * Shading adapts smoothly: Low capacity is light gray, stable operations are soft teal/slate, and saturated workloads (Index > 18) trigger an amber alert flag indicating overload.
 
-### 5.5 Deadlines Tab (Compliance Center)
-* **Goal**: Pure compliance tracking showing only high-critical targets.
-* **Layout Design**:
-  * Renders cards with exact, live countdown clocks (e.g., "14 hours remaining for NEOM Commercial Submission").
-  * Status bars show completion of pre-requisites: *Is Bidding Bond paid? Is Risk assessment complete? Has PMO checker signed?*
-
-### 5.6 Meetings Tab (Alignment Coordinator)
-* **Goal**: Centralized listing of interactive, engineering-centric meetings.
-* **Features**:
-  * Groups alignments, client face-to-face negotiation roundtables, and project kick-offs.
-  * Highlights "External Meeting" vs "Internal Meeting" with clear badges to maintain professional focus.
-
-### 5.7 Conflicts Tab (Automated Quality Guard)
-* **Goal**: Diagnostic suite detailing dual assignments, milestone overlaps, and missing milestones.
-* **Key Warnings**:
-  * **Dual Booking Warning**: Engineer scheduled to present Technical Bid in Riyadh and join a NEOM alignment meeting at the same hour.
-  * **Calculated Dates Overlap**: Commercial Bid date scheduled before technical estimates can lock.
-  * **Pending Documentation Alert**: Tender is 2 days from tech submission but BOQ sheets remain incomplete.
+### 4.6 Conflicts Tab (Automated Quality Guard)
+* **Goal**: Real-time diagnostic panel calling out project anomalies.
+* **Warning Engine detects**:
+  * **Resource Dual-Bookings**: Ahmed is assigned to join a Riyadh meeting and a Neom alignment at the same hour.
+  * **Chronology Volatility**: Commercial proposal date scheduled prior to the completion of technical estimation drafts.
+  * **Dependency Slippage**: A predecessor milestone is delayed by 5 days, pushing a critical tender submission past the client's hard deadline.
 
 ---
 
-## 6. Functional Business & Interaction Rules
+## 5. Event Dependency & Propagation Model
 
-### 6.1 Automatic Event Synthesis (Zero Duplication Rule)
-Whenever database state shifts occur in other elements, the Operations Center recalculates event nodes dynamically.
-
-* **Trigger A**: Creating a new Tender record (`TenderWizard`) automatically calculates and schedules **7 default calendar points**:
-  * *T0 (Tech Date - 15 days)*: Kickoff Meeting
-  * *T1 (Tech Date - 10 days)*: Risk Assessment Due
-  * *T2 (Tech Date - 5 days)*: Internal Alignment Matrix
-  * *T3 (Tech Date)*: Technical Submission
-  * *T4 (Tech Date + 5 days)*: Technical Assessment Follow-up
-  * *T5 (Tech Date + 12 days)*: Commercial Submission
-  * *T6 (Tech Date + 20 days)*: Final Registration & Official Win decision
-* **Trigger B**: Submitting an active project claims voucher (`ProjectControls`) automatically schedules:
-  * *C0 (Logging Date)*: Claim Generation Flag
-  * *C1 (Logging Date + 14 days)*: Assessment Limit Deadline
-  * *C2 (Logging Date + 28 days)*: Response Target Boundary
-
-*If any parent date evolves (e.g., client expands Technical Proposal date by 14 days), all 7 child calendar dates shift immediately inside the service mapping tree.*
-
----
-
-## 7. Operational Strategies & Technical Implementations
-
-### 7.1 Dynamic Filtering Strategy
-Because filters govern hundreds of active inputs, the Left Sidebar executes multi-dimensional search:
-* **Project Filters**: Checkbox arrays grouped by region (Riyadh, Western, Eastern).
-* **Owner / Resource**: Typeahead lookup selecting multiple project coordinators or estimating engineers.
-* **Category Filters**: Unified toggle selections dividing Pre-Award Bid tasks from Post-Award Claims or NOCs.
-* **Performance Control**: All filters execute instantly via React state memoizations, resolving search indexes in under **5ms** by running against structured memory-cached indices.
-
-### 7.2 Conflict Detection Engine (Diagnostic Mechanics)
-An automated validator scans active registers whenever the browser loads the Operations Center:
-
-$$\text{Conflict Check} (E_1, E_2) \implies | \text{Date}(E_1) - \text{Date}(E_2) | < 1 \text{ Hour} \land (\text{Owners}(E_1) \cap \text{Owners}(E_2) \neq \emptyset)$$
-
-* **Conflict Type A (Resource Overload)**: Triggers when user `John Doe` is a specified attendee in overlapping event periods.
-* **Conflict Type B (Sequential Milestones Volatilities)**: Triggers if dependent items violate chronology (e.g., site visit scheduled after technical submission date).
-* **UI Feedback**: Conflict warnings generate standard small hazard badges with warning indicators inside grids. Selecting a hazard badge displays a troubleshooting popover with direct reassignment buttons.
+To preserve scheduling consistency across multi-stage tenders, the Operations Center implements a robust **Directed Acyclic Graph (DAG) Dependency Model**:
 
 ```
-┌───────────────────────────────────────┐
-│ ⚠ CONFLICT DETECTED                   │
-├───────────────────────────────────────┤
-│ Engineer "Ahmed" has overlapping to-dos:│
-│ 1. NEOM Alignment (09:00 - 10:30)     │
-│ 2. JED Tech Review (10:00 - 11:30)    │
-├───────────────────────────────────────┤
-│ [ Reassign John ]   [ Dismiss Alert ] │
-└───────────────────────────────────────┘
+[Technical Kickoff] ──► [Risk Assessment] ──► [Technical Submission] ──► [Commercial Submission] ──► [Contract Award]
 ```
 
-### 7.3 Real-Time Caching Strategy
-To prevent dragging database transaction engines down during continuous calendar moves:
-1. **Aggregated Memory Cache**: The application maintains a localized, non-persistent schema index map.
-2. **Dynamic Segment Invalidation**: Editing an active date in a Tender form will invalidate *only* that tender's segment cache, leaving unrelated project caches active.
+### 5.1 Predecessor & Successor Schema
+Every calendar event contains optional relational pointers:
+* `predecessorIds`: Array of unique event IDs that must be completed before this task can begin.
+* `successorIds`: Array of subsequent event IDs that depend on this task's completion.
+* `lagDays`: The minimum required operational gap between predecessor completion and successor commencement (e.g., a 12-day commercial offset limit).
+
+### 5.2 Automatic Rescheduling Propagation Logic
+When a parent event shifts, the system propagates the changes down the sequence using an automatic calculation loop:
+
+```
+Predecessor End Date shifts by +D Days
+              │
+              ▼
+    Does Successor Start Date violate Lag Buffer?
+         /          \
+       YES           NO
+       /              \
+      ▼                ▼
+Shift Successor     No Change
+Start Date by +D
+      │
+      ▼
+Check Next Successor in DAG Chain
+```
+
+1. **Conflict Evaluation**: If a user changes a technical bid submission date by $+5$ days, the system evaluates all succeeding nodes in the DAG.
+2. **Auto-Update Propagations**: Successors are automatically shifted forward to maintain the required `lagDays` buffer.
+3. **Interactive Adjustment Confirmation**: Instead of modifying source documents without review, the interface presents a clear sequence preview:
+   *"Delaying NEOM Technical Submission by 5 days will push Commercial Submission and Negotiation Meetings forward. Do you want to propagate these shifts?"*
+4. **Resolution Logs**: Every automatic date shift logs a system note on the event record: *"Date shifted automatically due to predecessor delay."*
 
 ---
 
-## 8. UX Guidelines & Design Logic
+## 6. Operations Command Panel (Replaces Drawer)
 
-### 8.1 Color Logic & Micro-Contrast
-ROWAD avoids bright colors to protect readability. Colors are highly restrained:
-* **Backgrounds**: Soft off-white backgrounds (or slate dark) highlighted by light borders.
+Selecting an event card opens the **Operations Command Panel**, an immersive side-bezel screen designed for rapid decision-making.
+
+```
+┌───────────────────────────────────────────────────────────────┐
+│ OPERATIONS COMMAND PANEL                             [x] Close│
+├───────────────────────────────────────────────────────────────┤
+│ 🏷️ EVENT: Technical Submission - PC-2026-NEOM                  │
+│                                                               │
+│ PROJECT SUMMARY                                               │
+│ Code: PC-2026-NEOM | Stage: Pre-Award Proposals                │
+│ Budget: AED 150,000,000.00 | Client: NEOM Authority           │
+│                                                               │
+│ OWNER                                                         │
+│ 👤 Sara Al-Mansoori (PMO Coordinator) | Dept: Estimating     │
+│                                                               │
+│ DETAILS                                                       │
+│ Status: [In Progress] | Priority: [CRITICAL]                  │
+│ Start: 2026-06-25 09:00 | End: 2026-06-25 11:30               │
+├───────────────────────────────────────────────────────────────┤
+│ 🔗 DEEP LINKS & SOURCE RECORDS                                 │
+│ [Open Tender (Pre-Award)]    [Open Timeline (Gantt)]          │
+│ [Open Project Profile]       [Open Document Transmittals]     │
+├───────────────────────────────────────────────────────────────┤
+│ 📁 RELATED DOCUMENTS & MATERIALS                               │
+│ - 📄 BOQ_Draft_Rev2.xlsx (Excel Sheet - 4.2 MB)                │
+│ - 📄 Risk_Matrix_v1.pdf (PDF Document - 1.1 MB)               │
+│                                                               │
+│ 📅 RELATED MEETINGS                                           │
+│ - 👥 Internal Technical Review (Today, 14:00)                  │
+│                                                               │
+│ 📈 DEPENDENCY CHAIN                                           │
+│ Predecessor: Risk Assessment Check (Completed)                │
+│ Successor: Commercial Submission (Lag: +12 Days)              │
+├───────────────────────────────────────────────────────────────┤
+│ ⚡ QUICK OPERATIONS DIRECT ACTIONS                             │
+│ [✔ Complete Task]   [📅 Reschedule Date]   [👤 Reassign Owner]│
+│ [📝 Add Comment]    [📎 Attach New File]                      │
+└───────────────────────────────────────────────────────────────┘
+```
+
+The Command Panel integrates:
+* **Deep Links**: Direct links to open parent modules (`Open Tender`, `Open IPC`, `Open Claim`, `Open VO`, `Open NOC`, `Open Document`).
+* **Direct Actions**: Perform workflow operations on the spot:
+  * **Complete Event**: Marks status as completed and triggers successor notifications.
+  * **Reschedule**: Directly shifts dates, automatically evaluating lag constraints.
+  * **Reassign**: Search-and-select field to shift task ownership, validating availability to prevent dual-bookings.
+  * **Add Note**: Standard logging interface keeping an audit trail.
+  * **Attach File**: Direct drag-and-drop file upload target.
+
+---
+
+## 7. Global AI Command Bar (Future Capability)
+
+Designed for future natural language integration, the **Global AI Command Bar** acts as an instant conversational interface positioned at the top of the Operations Center:
+
+```
+💡 AI Command Bar: [ "Show me all Benin project deadlines due this week" ] [Go]
+```
+
+### 7.1 Parsed Query Patterns
+The future AI parser will match natural language queries to dynamic filter states:
+* *"Show my work today."* ──► Filters **My Work** tab to today's active tasks for the current user.
+* *"Show overdue claims."* ──► Navigates to **Conflicts** or **Kanban**, filtering Module to *Project Controls* and Status to *Overdue*.
+* *"Show Benin deadlines."* ──► Filters the entire Operations Center by project code `PC-BENIN` and active milestones.
+* *"Show this week's meetings."* ──► Navigates to **Calendar** or **Agenda**, filtering Event Category to *Alignment, Client, Negotiation, and Internal Meetings* for the current week.
+* *"Who is overloaded?"* ──► Navigates to the **Workload** tab, highlighting profiles where capacity score exceeds 18.
+* *"What deadlines are at risk?"* ──► Filters **Conflicts** and **Deadlines**, highlighting overdue predecessor tasks that block critical path submissions.
+
+---
+
+## 8. UX Guidelines & Visual System
+
+### 8.1 Microsoft Fluent Design & Color Shading
+ROWAD avoids aggressive colors to protect executive readability. High-contrast indicators are restricted to alert status indicators:
+* **Slate Gray Palette**: Default theme base, utilizing soft gradients, light borders, and spacious text margins.
+* **Operational Load Shading**: Subtle tints of slate-blue and steel-gray represent daily density. High density transitions elegantly into soft amber, reserving red borders strictly for actual workflow errors.
 * **Category Color Accent (RESTRICTED)**:
-  * **Pre-Award (Tenders)**: Royal Blue themes (`bg-blue-50/60`, `border-blue-150`, `text-blue-900`).
-  * **Project Controls (Financials)**: Emerald Green themes (`bg-emerald-50/60`, `border-emerald-150`, `text-emerald-900`).
-  * **Administrative / Reminders**: Cool Gray themes (`bg-gray-100`, `border-gray-200`, `text-gray-700`).
-* **Visual Density Weighting (Heatmaps ONLY)**:
-  * Low Intensity: Solid pastel emerald.
-  * Medium Density: Textured amber stripe.
-  * Overloaded: High contrast orange.
-  * Critical Alert: High contrast red matching accessibility contrast rules.
+  * **Pre-Award (Tenders)**: Royal Blue accents (`bg-blue-50/60`, `border-blue-150`, `text-blue-900`).
+  * **Project Controls (Financials)**: Emerald Green accents (`bg-emerald-50/60`, `border-emerald-150`, `text-emerald-900`).
+  * **Document Control (Submittals)**: Cool Slate accents (`bg-slate-50`, `border-slate-200`, `text-slate-800`).
+  * **Meetings / Reminders**: Cool Gray accents (`bg-zinc-100`, `border-zinc-200`, `text-zinc-700`).
 
-### 8.2 Responsive Layout Adjustment
-* **Desktop Views (MinWidth: 1280px)**: The complete 3-pane layout displays sidebars, calendar matrices, right timelines, and bottom tracking boards.
-* **Tablet Views (MinWidth: 768px)**: Left filter panels slide to off-screen drawers with clean slide selectors. The bottom timeline collapses, retaining Month Heatmap views.
-* **Mobile Views (Width < 768px)**: The calendar grid switches to a consolidated Week list or heat-strip layout. Clicking dates opens clean sliding bottom sheets showing listings.
+### 8.2 Responsive Layout Adjustments
+* **Desktop Views (Width >= 1280px)**: Displays full 3-pane dashboard with Left Filters, Center active view, and Right diagnostics panel.
+* **Tablet Views (Width >= 768px)**: Collapses Left filters and Right diagnostics into floating sidebars, retaining the Center operational views.
+* **Mobile Views (Width < 768px)**: Adjusts all active views into a simplified daily checklist. Calendar views switch to a horizontal 7-day Operational Load bar. Clicking any slot launches a responsive bottom-sheet detailing task details and quick action buttons.
 
 ---
 
-## 9. Accessibility Specifications (Section 508 & WCAG 2.1 AA)
-* **Contrast Safeguard**: All tag and border pairings are verified. For instance, gray badges use dark zinc text (`text-zinc-850`) to ensure contrast meets WCAG’s **4.5:1 ratio**.
-* **Screen Reader Interoperability**: Every interactive day block implements `aria-label` stating day context and event counts (e.g., `aria-label="June 8, 2026. High workload: 4 active events. Click to expand."`).
-* **Keyboard Navigation Grid**: Standard arrow keys (`←`, `↑`, `→`, `↓`) shift selection focal points between calendar matrix grids. Tab controls navigate sections.
-* **Bilingual Screen-Readers**: Supports dynamic HTML lang attribute switches so screen readers adopt the correct phonetics (English/Arabic) based on localized labels.
-
----
-
-## 10. Future AI Scheduling Opportunities
-Beyond standard chronological plotting, future iterations can implement:
-1. **RFP Due Date Risk Prognosis**: Analyzing client document quality, budget scale, and available estimating staff to predict likelihood of schedule slips.
-2. **Automatic Schedule Optimizers**: Algorithms adjusting internal milestone dates when conflict alerts identify overworked estimators.
-3. **Conversational Date Alterations**: Natural Language input interface (e.g., "AI Scheduler: Delay Riyadh pipeline alignment meeting to Wednesday at 2pm and warn the PMO").
-
----
-
-*This UI Blueprint is verified as the Official Product and Experience Specification for the ROWAD Operations Calendar.*
+*This updated UI Blueprint is verified as the official Design, UX, and Flow Specification for the ROWAD Operations Center.*

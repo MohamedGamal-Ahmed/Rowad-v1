@@ -11,6 +11,7 @@ import { mockProjects } from './data';
 import { TenderService } from './services/TenderService';
 import { ProjectControlsService } from './services/ProjectControlsService';
 import { ProjectControlsMapper } from './mappers/ProjectControlsMapper';
+import { OperationsCenterPage } from './features/operations-center';
 
 export default function App() {
   const [lang, setLang] = useState<'ar' | 'en'>('ar');
@@ -139,6 +140,11 @@ export default function App() {
               list={tendersList}
               executionRecords={executionRecords}
               documentRecords={documentRecords}
+            />
+          ) : currentView === 'operations-center' ? (
+            <OperationsCenterPage 
+              lang={lang}
+              onNavigateToView={handleNavigate}
             />
           ) : currentView === 'ongoing-tenders' ? (
             <OngoingTenders 
