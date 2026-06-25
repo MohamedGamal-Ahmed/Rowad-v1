@@ -29,10 +29,16 @@ export function SettingsView({ lang, settings, onUpdateSettings }: SettingsViewP
     },
     numberingSettings: { ...settings.numberingSettings },
     workloadSettings: { ...settings.workloadSettings },
-    healthSettings: { ...settings.healthSettings }
+    healthSettings: { ...settings.healthSettings },
+    conflictSettings: settings.conflictSettings ? { ...settings.conflictSettings } : {
+      minGapBetweenMeetings: 30,
+      travelBuffer: 15,
+      conflictThreshold: 0,
+      allowBackToBack: true
+    }
   }));
 
-  const [activeTab, setActiveTab] = useState<'timeline' | 'financial' | 'calendar' | 'numbering' | 'workload' | 'security'>('timeline');
+  const [activeTab, setActiveTab] = useState<'timeline' | 'financial' | 'calendar' | 'numbering' | 'workload' | 'security' | 'conflict'>('timeline');
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   
@@ -149,6 +155,12 @@ export function SettingsView({ lang, settings, onUpdateSettings }: SettingsViewP
         healthSettings: {
           dueSoonThresholdDays: 7,
           overdueThresholdDays: 0
+        },
+        conflictSettings: {
+          minGapBetweenMeetings: 30,
+          travelBuffer: 15,
+          conflictThreshold: 0,
+          allowBackToBack: true
         }
       });
     }
@@ -274,6 +286,18 @@ export function SettingsView({ lang, settings, onUpdateSettings }: SettingsViewP
           >
             <Sliders className="w-4 h-4 shrink-0" />
             <span>{isAr ? "مؤشرات الصحة والأعباء" : "Health & Workload"}</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('conflict')}
+            className={`w-full flex items-center gap-2.5 px-4 py-3 rounded-2xl text-xs font-black transition-all cursor-pointer
+              ${activeTab === 'conflict' 
+                ? 'bg-brand-navy text-white shadow-md' 
+                : 'bg-white border border-gray-50 text-gray-500 hover:bg-gray-50'
+              }`}
+          >
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{isAr ? "قواعد محرك التعارض" : "Conflict Engine Rules"}</span>
           </button>
 
           <button
@@ -811,6 +835,140 @@ export function SettingsView({ lang, settings, onUpdateSettings }: SettingsViewP
                         className="w-full bg-white border border-gray-200 rounded-lg p-2 font-bold focus:outline-none text-center"
                       />
                     </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 5.5 CONFLICT RESOLUTION RULES TAB */}
+            {activeTab === 'conflict' && (
+              <div className="space-y-6">
+                <div className="border-b border-gray-150 pb-3">
+                  <h3 className="text-base font-black text-brand-navy font-sans">
+                    {isAr ? "قواعد محرك كشف وتدقيق التعارض" : "Conflict Detection Engine & Rules"}
+                  </h3>
+                  <p className="text-gray-400 text-xs mt-1">
+                    {isAr 
+                      ? "تحديد معايير الجدولة والتحقق من التداخل الزمني، بما في ذلك أوقات الانتقال والاجتماعات المتتالية وفترات الترحيل." 
+                      : "Define corporate rules for calendar overlaps, transition buffers, and sequential meeting permissions."}
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="font-extrabold text-brand-navy block text-xs">
+                        {isAr ? "الحد الأدنى للفجوة بين الاجتماعات (بالدقائق)" : "Minimum Gap Between Meetings (Minutes)"}
+                      </label>
+                      <input 
+                        type="number" 
+                        min="0"
+                        value={localSettings.conflictSettings?.minGapBetweenMeetings ?? 30}
+                        onChange={(e) => setLocalSettings(prev => ({
+                          ...prev,
+                          conflictSettings: { 
+                            ...(prev.conflictSettings || { minGapBetweenMeetings: 30, travelBuffer: 15, conflictThreshold: 0, allowBackToBack: true }), 
+                            minGapBetweenMeetings: parseInt(e.target.value) || 0 
+                          }
+                        }))}
+                        className="w-full bg-white border border-gray-200 rounded-lg p-2 font-bold focus:outline-none text-center text-xs"
+                      />
+                      <p className="text-[10px] text-gray-400 leading-relaxed">
+                        {isAr 
+                          ? "الوقت الإجباري بين الاجتماعات لمنع التداخل (يولد تحذير انتقال إذا قل الفاصل عنه)." 
+                          : "Required gap between consecutive meetings before generating a transition warning."}
+                      </p>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="font-extrabold text-brand-navy block text-xs">
+                        {isAr ? "عتبة التداخل والتعارض (بالدقائق)" : "Conflict Threshold (Minutes)"}
+                      </label>
+                      <input 
+                        type="number" 
+                        min="0"
+                        value={localSettings.conflictSettings?.conflictThreshold ?? 0}
+                        onChange={(e) => setLocalSettings(prev => ({
+                          ...prev,
+                          conflictSettings: { 
+                            ...(prev.conflictSettings || { minGapBetweenMeetings: 30, travelBuffer: 15, conflictThreshold: 0, allowBackToBack: true }), 
+                            conflictThreshold: parseInt(e.target.value) || 0 
+                          }
+                        }))}
+                        className="w-full bg-white border border-gray-200 rounded-lg p-2 font-bold focus:outline-none text-center text-xs"
+                      />
+                      <p className="text-[10px] text-gray-400 leading-relaxed">
+                        {isAr 
+                          ? "مدة التداخل المسموح بها قبل اعتبار التداخل بمثابة 'حجز مزدوج حرج'." 
+                          : "Permitted overlap duration in minutes before generating a Critical Conflict."}
+                      </p>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="font-extrabold text-brand-navy block text-xs">
+                        {isAr ? "مخزن وقت السفر والانتقال (بالدقائق)" : "Travel / Buffer Gap (Minutes)"}
+                      </label>
+                      <input 
+                        type="number" 
+                        min="0"
+                        value={localSettings.conflictSettings?.travelBuffer ?? 15}
+                        onChange={(e) => setLocalSettings(prev => ({
+                          ...prev,
+                          conflictSettings: { 
+                            ...(prev.conflictSettings || { minGapBetweenMeetings: 30, travelBuffer: 15, conflictThreshold: 0, allowBackToBack: true }), 
+                            travelBuffer: parseInt(e.target.value) || 0 
+                          }
+                        }))}
+                        className="w-full bg-white border border-gray-200 rounded-lg p-2 font-bold focus:outline-none text-center text-xs"
+                      />
+                      <p className="text-[10px] text-gray-400 leading-relaxed">
+                        {isAr 
+                          ? "مخزن احتياطي لأوقات السفر والانتقال الجغرافي للموظفين بين المواقع." 
+                          : "Required travel or geographical buffer allocated to transition schedules safely."}
+                      </p>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="font-extrabold text-brand-navy block text-xs">
+                        {isAr ? "التقويم الفعلي وساعات العمل" : "Business Calendar Working Hours"}
+                      </label>
+                      <div className="bg-gray-50 border border-gray-150 rounded-lg p-2 text-center text-xs font-mono font-bold text-gray-600">
+                        {localSettings.businessCalendar.workingHoursStart} &rarr; {localSettings.businessCalendar.workingHoursEnd}
+                      </div>
+                      <p className="text-[10px] text-gray-400 leading-relaxed">
+                        {isAr 
+                          ? "يتم قراءتها تلقائياً من تبويب التقويم لتحديد فترات العمل الرسمية." 
+                          : "Automatically synchronized from the Business Calendar tab."}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-2xl border border-gray-150 flex items-center justify-between gap-4 mt-4">
+                    <div>
+                      <h4 className="text-xs font-black text-brand-navy font-sans">
+                        {isAr ? "السماح بالاجتماعات المتتالية مباشرة" : "Allow Back-to-Back Meetings"}
+                      </h4>
+                      <p className="text-[10px] text-gray-400 leading-relaxed mt-0.5">
+                        {isAr 
+                          ? "عند التفعيل، لن يعتبر النظام الاجتماع الذي يبدأ فور انتهاء سابقه (مثال: 10:00-11:00 ثم 11:00-12:00) بمثابة تعارض." 
+                          : "If enabled, events where end time matches start time (e.g. 10:00-11:00 and 11:00-12:00) will be classified as a Sequential Schedule rather than a conflict."}
+                      </p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                      <input 
+                        type="checkbox" 
+                        checked={localSettings.conflictSettings?.allowBackToBack ?? true}
+                        onChange={(e) => setLocalSettings(prev => ({
+                          ...prev,
+                          conflictSettings: { 
+                            ...(prev.conflictSettings || { minGapBetweenMeetings: 30, travelBuffer: 15, conflictThreshold: 0, allowBackToBack: true }), 
+                            allowBackToBack: e.target.checked 
+                          }
+                        }))}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-navy"></div>
+                    </label>
                   </div>
                 </div>
               </div>

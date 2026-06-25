@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  X, CheckCircle2, Calendar, User, Folder, Paperclip, Plus, Send, Link, AlertTriangle
+  X, CheckCircle2, Calendar, User, Folder, Paperclip, Plus, Send, Link, AlertTriangle, Clock, Video, MapPin, Users
 } from 'lucide-react';
-import { CalendarEvent, EventStatus, EventPriority, EventModuleType } from '../../types';
+import { CalendarEvent, EventStatus, EventPriority, EventModuleType, CalendarEventType } from '../../types';
 import { BiText } from '../../../../components/BiText';
 
 interface OperationsCommandPanelProps {
@@ -15,6 +15,7 @@ interface OperationsCommandPanelProps {
   onAddNote: (id: string, author: string, text: string) => void;
   onAttachFile: (id: string, name: string, size: string) => void;
   onNavigateToView: (viewId: string) => void;
+  onUpdateDetails?: (event: CalendarEvent) => void;
 }
 
 export function OperationsCommandPanel({
@@ -26,7 +27,8 @@ export function OperationsCommandPanel({
   onReassign,
   onAddNote,
   onAttachFile,
-  onNavigateToView
+  onNavigateToView,
+  onUpdateDetails
 }: OperationsCommandPanelProps) {
   const isAr = lang === 'ar';
   const [commentText, setCommentText] = useState('');
@@ -36,6 +38,44 @@ export function OperationsCommandPanel({
   const [showReassign, setShowReassign] = useState(false);
   const [reassignName, setReassignName] = useState(event.ownerName);
   const [dragActive, setDragActive] = useState(false);
+
+  // Meeting scheduling form state
+  const [showScheduleForm, setShowScheduleForm] = useState(false);
+  const [meetType, setMeetType] = useState<CalendarEventType>(event.calendarEventType || CalendarEventType.MILESTONE);
+  const [startTime, setStartTime] = useState(event.startTime || '09:00');
+  const [duration, setDuration] = useState<number>(event.durationMinutes || 60);
+  const [format, setFormat] = useState<'online' | 'physical'>(event.meetingType || 'online');
+  const [link, setLink] = useState(event.meetingLink || '');
+  const [room, setRoom] = useState(event.meetingRoom || '');
+  const [attendeesText, setAttendeesText] = useState(event.attendees?.join(', ') || '');
+
+  // Reset internal states when the active event changes
+  useEffect(() => {
+    setNewStart(event.startDate);
+    setNewEnd(event.endDate);
+    setReassignName(event.ownerName);
+    setMeetType(event.calendarEventType || CalendarEventType.MILESTONE);
+    setStartTime(event.startTime || '09:00');
+    setDuration(event.durationMinutes || 60);
+    setFormat(event.meetingType || 'online');
+    setLink(event.meetingLink || '');
+    setRoom(event.meetingRoom || '');
+    setAttendeesText(event.attendees?.join(', ') || '');
+    setShowScheduleForm(false);
+    setShowReschedule(false);
+    setShowReassign(false);
+  }, [event]);
+
+  // Automatic End Time Calculation
+  const calculatedEndTime = useMemo(() => {
+    if (!startTime) return '';
+    const [hours, minutes] = startTime.split(':').map(Number);
+    if (isNaN(hours) || isNaN(minutes)) return '';
+    const totalMinutes = hours * 60 + minutes + Number(duration);
+    const endHours = Math.floor(totalMinutes / 60) % 24;
+    const endMinutes = totalMinutes % 60;
+    return `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+  }, [startTime, duration]);
 
   const handleAddComment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,6 +92,38 @@ export function OperationsCommandPanel({
   const handleApplyReassign = () => {
     onReassign(event.id, reassignName);
     setShowReassign(false);
+  };
+
+  const handleSaveMeeting = () => {
+    if (!onUpdateDetails) return;
+    onUpdateDetails({
+      ...event,
+      calendarEventType: meetType,
+      startTime,
+      endTime: calculatedEndTime,
+      durationMinutes: Number(duration),
+      meetingType: format,
+      meetingLink: format === 'online' ? link : undefined,
+      meetingRoom: format === 'physical' ? room : undefined,
+      attendees: attendeesText ? attendeesText.split(',').map(s => s.trim()).filter(Boolean) : []
+    });
+    setShowScheduleForm(false);
+  };
+
+  const handleRevertToMilestone = () => {
+    if (!onUpdateDetails) return;
+    onUpdateDetails({
+      ...event,
+      calendarEventType: CalendarEventType.MILESTONE,
+      startTime: undefined,
+      endTime: undefined,
+      durationMinutes: undefined,
+      meetingType: undefined,
+      meetingLink: undefined,
+      meetingRoom: undefined,
+      attendees: []
+    });
+    setShowScheduleForm(false);
   };
 
   // Mock file drop handler
@@ -100,6 +172,15 @@ export function OperationsCommandPanel({
     [EventPriority.MEDIUM]: 'bg-slate-50 text-slate-800 border-slate-200',
     [EventPriority.LOW]: 'bg-zinc-50 text-zinc-600 border-zinc-200'
   };
+
+  // Check if current event is treated as a scheduled interactive meeting
+  const isScheduledMeeting = event.calendarEventType && (
+    event.calendarEventType === CalendarEventType.MEETING ||
+    event.calendarEventType === CalendarEventType.WORKSHOP ||
+    event.calendarEventType === CalendarEventType.SITE_VISIT ||
+    event.calendarEventType === CalendarEventType.CLIENT_VISIT ||
+    event.calendarEventType === CalendarEventType.NEGOTIATION_SESSION
+  );
 
   return (
     <aside 
@@ -267,6 +348,298 @@ export function OperationsCommandPanel({
                 </div>
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Meeting Scheduling Metadata Block */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider font-mono">
+              {isAr ? 'تنسيق الاجتماع وجلسات التنسيق' : 'MEETING SCHEDULING METADATA'}
+            </span>
+            {onUpdateDetails && (
+              <button 
+                onClick={() => {
+                  if (!isScheduledMeeting) {
+                    setMeetType(CalendarEventType.MEETING);
+                  }
+                  setShowScheduleForm(!showScheduleForm);
+                }}
+                className="text-xs text-brand-red hover:underline font-bold cursor-pointer"
+              >
+                {isScheduledMeeting 
+                  ? (isAr ? 'تعديل حجز الاجتماع' : 'Edit Meeting Slots')
+                  : (isAr ? '📅 جدولة حجز اجتماع' : '📅 Schedule Meeting / Workshop')
+                }
+              </button>
+            )}
+          </div>
+
+          <div className="bg-white dark:bg-slate-950/10 border border-slate-150 dark:border-slate-800 rounded-2xl p-4 space-y-4">
+            
+            {/* 1. View mode if meeting details are already mapped */}
+            {isScheduledMeeting && !showScheduleForm && (
+              <div className="space-y-3.5 text-xs">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-2">
+                  <span className="text-slate-400">{isAr ? 'نوع الحدث المجدول:' : 'Meeting Type:'}</span>
+                  <span className="font-extrabold text-brand-red uppercase tracking-wider bg-brand-red/5 px-2.5 py-0.5 rounded-full text-[10px]">
+                    {isAr ? {
+                      [CalendarEventType.MEETING]: 'اجتماع عمل 👥',
+                      [CalendarEventType.WORKSHOP]: 'ورشة عمل فنية ⚙',
+                      [CalendarEventType.SITE_VISIT]: 'زيارة ميدانية للموقع 🗺',
+                      [CalendarEventType.CLIENT_VISIT]: 'مراجعة مع العميل 🤝',
+                      [CalendarEventType.NEGOTIATION_SESSION]: 'جلسة مفاوضات 💰'
+                    }[event.calendarEventType || CalendarEventType.MEETING] : (event.calendarEventType || 'meeting').replace('_', ' ')}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <Clock className="w-4 h-4 text-slate-400 shrink-0" />
+                    <div>
+                      <p className="text-slate-400 text-[10px] uppercase font-bold">{isAr ? 'الوقت والمدة:' : 'Time & Duration:'}</p>
+                      <p className="font-bold text-slate-800 dark:text-slate-200">
+                        {event.startTime} - {event.endTime} ({event.durationMinutes}m)
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2.5">
+                    {event.meetingType === 'online' ? (
+                      <Video className="w-4 h-4 text-slate-400 shrink-0" />
+                    ) : (
+                      <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
+                    )}
+                    <div>
+                      <p className="text-slate-400 text-[10px] uppercase font-bold">{isAr ? 'تنسيق الجلسة:' : 'Meeting Format:'}</p>
+                      <p className="font-bold text-slate-800 dark:text-slate-200">
+                        {event.meetingType === 'online' 
+                          ? (isAr ? 'اجتماع افتراضي (Teams)' : 'Online (MS Teams)') 
+                          : (isAr ? `حضوري: ${event.meetingRoom || 'قاعة الاجتماعات'}` : `Physical: ${event.meetingRoom || 'Boardroom'}`)
+                        }
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {event.meetingType === 'online' && event.meetingLink && (
+                  <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 flex items-center justify-between">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Video className="w-4 h-4 text-emerald-500 shrink-0" />
+                      <span className="truncate text-[11px] font-mono text-slate-500">{event.meetingLink}</span>
+                    </div>
+                    <a 
+                      href={event.meetingLink} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-xs text-brand-red font-bold hover:underline shrink-0 ml-2"
+                    >
+                      {isAr ? 'انضم الآن' : 'Join Link'}
+                    </a>
+                  </div>
+                )}
+
+                {event.attendees && event.attendees.length > 0 && (
+                  <div>
+                    <p className="text-slate-400 text-[10px] uppercase font-bold mb-1.5 flex items-center gap-1">
+                      <Users className="w-3 h-3" />
+                      <span>{isAr ? 'المشاركون والمدعوون:' : 'Participants / Attendees:'}</span>
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {event.attendees.map((att, idx) => (
+                        <span key={idx} className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-md font-medium text-[11px]">
+                          {att}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 2. Display text when it is a pure all-day Milestone */}
+            {!isScheduledMeeting && !showScheduleForm && (
+              <div className="space-y-2 text-xs">
+                <div className="flex items-start gap-2 text-slate-500 dark:text-slate-400">
+                  <Calendar className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                  <p className="leading-relaxed">
+                    {isAr 
+                      ? 'هذا الحدث مسجل حالياً كمعلم رئيسي أو موعد نهائي طوال اليوم (All-Day Milestone). لا يشغل ساعات محددة من يوم العمل المكتبي، ويتم تجاهله تماماً في تداخلات المواعيد.'
+                      : 'This event is currently registered as an All-Day Milestone or Deadline. It does not occupy a specific hour block in the workforce schedule, and is completely ignored by the scheduling conflict checks.'
+                    }
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* 3. Interactive scheduling form */}
+            {showScheduleForm && (
+              <div className="space-y-3 pt-1 border-t border-slate-100 dark:border-slate-800/80 animate-in fade-in duration-300">
+                
+                {/* Event Type / Sub-Category */}
+                <div>
+                  <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">
+                    {isAr ? 'تصنيف النشاط المجدول:' : 'Scheduled Activity Type:'}
+                  </label>
+                  <select
+                    value={meetType}
+                    onChange={(e) => setMeetType(e.target.value as CalendarEventType)}
+                    className="w-full text-xs border border-slate-200 dark:border-slate-700 bg-transparent rounded-lg p-2 text-slate-800 dark:text-slate-100 focus:outline-none"
+                  >
+                    <option value={CalendarEventType.MEETING}>{isAr ? 'اجتماع تنسيقي وبدء عمل' : 'Meeting'}</option>
+                    <option value={CalendarEventType.WORKSHOP}>{isAr ? 'ورشة عمل فنية للمهندسين' : 'Technical Workshop'}</option>
+                    <option value={CalendarEventType.SITE_VISIT}>{isAr ? 'زيارة تفقدية للموقع الميداني' : 'Site Visit'}</option>
+                    <option value={CalendarEventType.CLIENT_VISIT}>{isAr ? 'جلسة مراجعة مع جهة الإشراف والعميل' : 'Client Alignment Visit'}</option>
+                    <option value={CalendarEventType.NEGOTIATION_SESSION}>{isAr ? 'جلسة مفاوضات ومظاريف الأسعار' : 'Negotiation Session'}</option>
+                  </select>
+                </div>
+
+                {/* Start Time and Duration (Calculates End Time) */}
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">
+                      {isAr ? 'وقت البدء *:' : 'Start Time *:'}
+                    </label>
+                    <input
+                      type="time"
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                      className="w-full text-xs border border-slate-200 dark:border-slate-700 bg-transparent rounded-lg p-2 text-slate-800 dark:text-slate-100 focus:outline-none"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">
+                      {isAr ? 'المدة المخططة *:' : 'Duration *:'}
+                    </label>
+                    <select
+                      value={duration}
+                      onChange={(e) => setDuration(Number(e.target.value))}
+                      className="w-full text-xs border border-slate-200 dark:border-slate-700 bg-transparent rounded-lg p-2 text-slate-800 dark:text-slate-100 focus:outline-none"
+                    >
+                      <option value={30}>{isAr ? '30 دقيقة' : '30 mins'}</option>
+                      <option value={45}>{isAr ? '45 دقيقة' : '45 mins'}</option>
+                      <option value={60}>{isAr ? 'ساعة واحدة (60د)' : '1 hour'}</option>
+                      <option value={90}>{isAr ? 'ساعة ونصف (90د)' : '1.5 hours'}</option>
+                      <option value={120}>{isAr ? 'ساعتان (120د)' : '2 hours'}</option>
+                      <option value={180}>{isAr ? '3 ساعات' : '3 hours'}</option>
+                      <option value={240}>{isAr ? '4 ساعات' : '4 hours'}</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Auto Calculated End Time display */}
+                <div className="bg-slate-50 dark:bg-slate-900/40 rounded-xl p-2.5 border border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between text-xs">
+                  <span className="text-slate-400 font-bold">{isAr ? 'وقت الانتهاء التلقائي:' : 'Calculated End Time:'}</span>
+                  <span className="font-mono font-black text-brand-red text-sm">{calculatedEndTime}</span>
+                </div>
+
+                {/* Format selection */}
+                <div>
+                  <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">
+                    {isAr ? 'قناة الاجتماع والاتصال:' : 'Meeting Format:'}
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFormat('online')}
+                      className={`py-2 text-xs font-bold rounded-lg border cursor-pointer transition-all ${
+                        format === 'online'
+                          ? 'border-brand-red bg-brand-red/5 text-brand-red'
+                          : 'border-slate-200 dark:border-slate-800 text-slate-400'
+                      }`}
+                    >
+                      {isAr ? 'افتراضي (Zoom/Teams)' : 'Online / Link'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormat('physical')}
+                      className={`py-2 text-xs font-bold rounded-lg border cursor-pointer transition-all ${
+                        format === 'physical'
+                          ? 'border-brand-red bg-brand-red/5 text-brand-red'
+                          : 'border-slate-200 dark:border-slate-800 text-slate-400'
+                      }`}
+                    >
+                      {isAr ? 'حضوري بالمقر' : 'In-Person / Physical'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Conditional Locations details inputs */}
+                {format === 'online' ? (
+                  <div>
+                    <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">
+                      {isAr ? 'رابط الانضمام الإلكتروني:' : 'Online Meeting Link:'}
+                    </label>
+                    <input
+                      type="url"
+                      value={link}
+                      onChange={(e) => setLink(e.target.value)}
+                      placeholder="https://teams.microsoft.com/l/meetup-join/..."
+                      className="w-full text-xs border border-slate-200 dark:border-slate-700 bg-transparent rounded-lg p-2 text-slate-800 dark:text-slate-100 focus:outline-none font-mono"
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">
+                      {isAr ? 'اسم قاعة الاجتماعات أو الموقع الميداني:' : 'Meeting Room / Facility Location:'}
+                    </label>
+                    <input
+                      type="text"
+                      value={room}
+                      onChange={(e) => setRoom(e.target.value)}
+                      placeholder={isAr ? 'قاعة الاجتماعات الرئيسية - الطابق الرابع' : 'e.g., Executive Boardroom, Al Reem Tower'}
+                      className="w-full text-xs border border-slate-200 dark:border-slate-700 bg-transparent rounded-lg p-2 text-slate-800 dark:text-slate-100 focus:outline-none"
+                    />
+                  </div>
+                )}
+
+                {/* Attendees list inputs */}
+                <div>
+                  <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">
+                    {isAr ? 'أسماء المدعوين للمشاركة (مفصولة بفاصلة):' : 'Attendees / Invitees (Comma-separated):'}
+                  </label>
+                  <input
+                    type="text"
+                    value={attendeesText}
+                    onChange={(e) => setAttendeesText(e.target.value)}
+                    placeholder="Sara Al-Mansoori, Mohamed Al-Amri, Engineer Ali"
+                    className="w-full text-xs border border-slate-200 dark:border-slate-700 bg-transparent rounded-lg p-2 text-slate-800 dark:text-slate-100 focus:outline-none"
+                  />
+                </div>
+
+                {/* Action controls buttons */}
+                <div className="flex justify-between gap-2 text-xs pt-2">
+                  {isScheduledMeeting && (
+                    <button
+                      type="button"
+                      onClick={handleRevertToMilestone}
+                      className="px-3 py-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 rounded-lg font-bold border border-slate-200/60 dark:border-slate-700 cursor-pointer"
+                    >
+                      {isAr ? 'إلغاء الاجتماع كلياً' : 'Revert to Milestone'}
+                    </button>
+                  )}
+                  <div className="flex gap-1.5 ml-auto">
+                    <button
+                      type="button"
+                      onClick={() => setShowScheduleForm(false)}
+                      className="px-3 py-2 bg-slate-100 dark:bg-slate-850 rounded-lg font-bold text-slate-500 cursor-pointer"
+                    >
+                      {isAr ? 'تراجع' : 'Cancel'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveMeeting}
+                      className="px-4 py-2 bg-brand-red text-white rounded-lg font-bold cursor-pointer"
+                    >
+                      {isAr ? 'تأكيد وحفظ التعديلات' : 'Commit Meeting'}
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            )}
+
           </div>
         </div>
 

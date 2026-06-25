@@ -47,6 +47,13 @@ export interface HealthSettings {
   overdueThresholdDays: number; // e.g. 0
 }
 
+export interface ConflictSettings {
+  minGapBetweenMeetings: number; // e.g. 30 (minutes)
+  travelBuffer: number;          // e.g. 15 (minutes)
+  conflictThreshold: number;     // e.g. 0 (minutes)
+  allowBackToBack: boolean;      // true or false
+}
+
 export interface Settings {
   id: string;
   userId: string;
@@ -57,4 +64,5 @@ export interface Settings {
   numberingSettings: NumberingSettings;
   workloadSettings: WorkloadSettings;
   healthSettings: HealthSettings;
+  conflictSettings: ConflictSettings;
 }

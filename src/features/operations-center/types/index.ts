@@ -101,6 +101,14 @@ export interface CalendarEvent {
   attachments: EventAttachment[];
   hasConflict: boolean;
   
+  // Custom Scheduling Engine Enhancements (Milestones vs Meetings)
+  calendarEventType?: CalendarEventType;
+  durationMinutes?: number;
+  meetingType?: 'online' | 'physical';
+  meetingLink?: string;
+  meetingRoom?: string;
+  attendees?: string[];
+
   colorTheme: {
     bg: string;
     border: string;
@@ -109,3 +117,15 @@ export interface CalendarEvent {
   };
   lucideIconName: string;
 }
+
+export enum CalendarEventType {
+  MILESTONE = 'milestone',
+  DEADLINE = 'deadline',
+  REMINDER = 'reminder',
+  MEETING = 'meeting',
+  WORKSHOP = 'workshop',
+  SITE_VISIT = 'site_visit',
+  CLIENT_VISIT = 'client_visit',
+  NEGOTIATION_SESSION = 'negotiation_session'
+}
+

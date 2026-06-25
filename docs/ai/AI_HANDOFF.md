@@ -72,6 +72,18 @@ To run immediate validation sweeps, consult [Immediate Diagnostics in the Quick 
 * **Visual Component Isolation**: Modularized master-detail layouts into explicit sub-components (`TenderToolbar`, `TenderKPICards`, `TenderFilters`, `TenderActions`, `TenderTable`, `TenderDetailsDrawer`, `TenderImportModal`, `TenderWizardModal`).
 * **100% Structural Consistency**: Maintained total visual fidelity, language translation registers, form validations, date offsets, and business rule calculators with zero functional regressions.
 
+### ✅ Milestone 10: Localization & Operations UI Simplification (v1.5.0)
+* **Consolidated Language State & Switcher**: Removed local page-level language switchers, establishing the top-bar Header switcher as the single application-wide source of truth.
+* **Adaptive Form Field Translation**: Implemented adaptive layout logic for forms across `TenderWizardModal.tsx`, `OperationsCenterPage.tsx`, `DocumentControl.tsx`, and `ProjectExecution.tsx`. Forms now conditionally render fields matching the active UI language and synchronize dual-language values programmatically to eliminate forced duplicate typing.
+* **Operational Grid Visual Refinement**: Redesigned the calendar monthly load grid to directly consume dynamic event theme properties and display up to two high-density milestone titles alongside a clean `+ X more` label, significantly reducing visual clutter.
+* **Command Bar CTA Realignment**: Renamed the Sparkles AI Command Bar button from "Run" / "تشغيل" to "Analyze" / "تحليل" to improve descriptive clarity.
+* **Feature-Flagged Tab Optimization**: Kept future-focused workload, conflict, and PMO analytics tabs completely in code but neatly hidden behind an extensible flag (`SHOW_FUTURE_CAPABILITIES = false`) to streamline the Phase 1 interface.
+
+### ✅ Milestone 11: Milestone-Meeting Separation & Hardened Conflict Detection (v1.6.0)
+* **High-Fidelity Event Modeling**: Formulated complete schema separation between All-Day Milestones (ignored by the Conflict Engine) and Scheduled Meetings (workshops, visits, client meetings, negotiation sessions) containing explicit start times, calculated end times, format configurations, and active participant registers.
+* **Hardened Conflict Detection Engine**: Overhauled `/src/features/operations-center/services/ConflictEngine.ts` to strictly ignore date-only milestones and focus checks (resource overlap, working hours, and travel buffers) exclusively on scheduled meetings.
+* **Interactive Operations Command Panel**: Embedded interactive meeting-scheduling sub-modules inside `/src/features/operations-center/components/Shared/OperationsCommandPanel.tsx`, allowing estimators to schedule meetings on any pre-award milestone with real-time end-time calculation, bilingual forms, and revert-to-milestone support.
+* **Differentiated Calendar & List Rendering**: Redesigned the calendar monthly heatmap cell labels and day-expansion records to render milestones as soft, low-contrast pastel items, while showcasing meetings with strong visual borders, participant icons, and duration alerts.
 
 ---
 

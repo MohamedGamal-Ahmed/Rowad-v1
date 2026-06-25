@@ -95,7 +95,12 @@ Isolates ongoing transaction records into distinct ledgers (IPCs, Claims, Variat
 <details>
 <summary><b>4. Operations Center (Scheduling)</b></summary>
 <p>
-Interactive schedule planner tracking critical milestones. Calculates calendar distributions and warns of approaching review bottlenecks. Implements customized search parameters and filtering toggles.
+Interactive schedule planner and timeline manager. Implements a high-fidelity separation of concerns between All-Day Milestones (deadlines, qualifications, submissions, reviews) and Scheduled Meetings (workshops, site visits, client visits, negotiation sessions). Includes:
+<ul>
+  <li><b>Separated Event Architecture:</b> Milestones remain the source events, while meetings are scheduled using distinct metadata (start time, automatic duration end-time calculation, format, and participants).</li>
+  <li><b>Hardened Conflict Detection:</b> An analytical engine that exclusively evaluates scheduled meetings for resource overlaps, working hours, and travel buffers, ignoring date-only milestones.</li>
+  <li><b>Visual Distinction:</b> Distinct calendar grids and daily expansion list layouts that render milestones with soft, low-contrast pastel accents and scheduled meetings with strong, high-contrast visual focus.</li>
+</ul>
 </p>
 </details>
 

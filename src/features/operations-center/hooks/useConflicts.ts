@@ -1,113 +1,84 @@
 import { useMemo } from 'react';
-import { CalendarEvent, EventStatus } from '../types';
+import { CalendarEvent } from '../types';
+import { ConflictDetectionEngine, ConflictResult } from '../services/ConflictEngine';
+import { Settings } from '../../../domain/administration/Settings';
 
-export interface ScheduleConflict {
-  id: string;
-  type: 'double_booking' | 'chronological_violation' | 'lag_buffer_violation';
-  severity: 'critical' | 'high' | 'warning';
-  title: { en: string; ar: string };
-  description: { en: string; ar: string };
-  affectedEvents: CalendarEvent[];
-}
+export type ScheduleConflict = ConflictResult;
 
-export function useConflicts(events: CalendarEvent[]) {
+export function useConflicts(events: CalendarEvent[]): ScheduleConflict[] {
   const conflicts = useMemo(() => {
-    const list: ScheduleConflict[] = [];
-
-    // Find and analyze double bookings
-    const ownerDayEvents: { [key: string]: CalendarEvent[] } = {};
-    events.forEach(e => {
-      if (e.ownerName && e.startDate && e.startTime && e.endTime && e.status !== EventStatus.COMPLETED) {
-        const key = `${e.ownerName}_${e.startDate}`;
-        if (!ownerDayEvents[key]) ownerDayEvents[key] = [];
-        ownerDayEvents[key].push(e);
+    // Read the current settings from localStorage to ensure real-time reaction to settings updates
+    let settings: Settings | null = null;
+    try {
+      const saved = localStorage.getItem('pmo_enterprise_settings');
+      if (saved) {
+        settings = JSON.parse(saved);
       }
-    });
+    } catch (e) {
+      console.error('Error parsing settings in useConflicts hook:', e);
+    }
 
-    Object.keys(ownerDayEvents).forEach(key => {
-      const items = ownerDayEvents[key];
-      if (items.length > 1) {
-        // Compare pairs for intersection
-        for (let i = 0; i < items.length; i++) {
-          for (let j = i + 1; j < items.length; j++) {
-            const e1 = items[i];
-            const e2 = items[j];
-            const start1 = new Date(`${e1.startDate}T${e1.startTime}:00`);
-            const end1 = new Date(`${e1.startDate}T${e1.endTime}:00`);
-            const start2 = new Date(`${e2.startDate}T${e2.startTime}:00`);
-            const end2 = new Date(`${e2.startDate}T${e2.endTime}:00`);
-
-            if (start1 < end2 && start2 < end1) {
-              list.push({
-                id: `conflict-db-${e1.id}-${e2.id}`,
-                type: 'double_booking',
-                severity: 'critical',
-                title: {
-                  en: `Resource Dual-Booking: ${e1.ownerName}`,
-                  ar: `حجز مزدوج للموظف: ${e1.ownerName}`
-                },
-                description: {
-                  en: `Overlap on ${e1.startDate} between "${e1.title.en}" (${e1.startTime}) and "${e2.title.en}" (${e2.startTime}).`,
-                  ar: `تداخل في التاريخ ${e1.startDate} بين "${e1.title.ar}" (${e1.startTime}) و "${e2.title.ar}" (${e2.startTime}).`
-                },
-                affectedEvents: [e1, e2]
-              });
-            }
-          }
-        }
+    // Default fallback settings
+    const finalSettings: Settings = settings || {
+      id: 'admin-settings',
+      userId: 'admin',
+      preferredLanguage: 'ar',
+      timelineRules: {
+        kickOffOffset: -30,
+        riskAssessmentOffset: -21,
+        contractQualificationOffset: -14,
+        alignmentOffset: -10,
+        intermediateFollowUpOffset: -5,
+        reminderDays: 3,
+        followUpDays: 5,
+        escalationDays: 7
+      },
+      financialSettings: {
+        bidBondPercentage: 2.0,
+        performanceBondPercentage: 10.0,
+        retentionPercentage: 10.0,
+        vatPercentage: 15.0,
+        advancePaymentPercentage: 10.0,
+        defaultCurrency: 'AED',
+        currencyDisplayMode: 'individual'
+      },
+      businessCalendar: {
+        country: 'Saudi Arabia',
+        region: 'Riyadh',
+        weekendDays: [5, 6],
+        holidayDates: ['2026-09-23', '2026-02-22'],
+        workingHoursStart: '08:00',
+        workingHoursEnd: '17:00',
+        halfWorkingDays: [],
+        specialClosures: []
+      },
+      numberingSettings: {
+        projectFormat: 'PRJ-{YEAR}-{SEQ}',
+        tenderFormat: 'PA-{YEAR}-{SEQ}',
+        ipcFormat: 'IPC-{PROJECT}-{SEQ}',
+        claimFormat: 'CLM-{PROJECT}-{SEQ}',
+        voFormat: 'VO-{PROJECT}-{SEQ}',
+        nocFormat: 'NOC-{PROJECT}-{SEQ}',
+        documentFormat: 'DOC-{TYPE}-{SEQ}'
+      },
+      workloadSettings: {
+        maxTasksPerEngineer: 5,
+        warningThreshold: 80
+      },
+      healthSettings: {
+        dueSoonThresholdDays: 7,
+        overdueThresholdDays: 0
+      },
+      conflictSettings: {
+        minGapBetweenMeetings: 30,
+        travelBuffer: 15,
+        conflictThreshold: 0,
+        allowBackToBack: true
       }
-    });
+    };
 
-    // Find and analyze chronological sequencing / lag violations
-    events.forEach(e => {
-      if (e.predecessorIds && e.predecessorIds.length > 0) {
-        e.predecessorIds.forEach(pId => {
-          const pred = events.find(item => item.id === pId);
-          if (pred) {
-            const predEnd = new Date(pred.endDate);
-            const succStart = new Date(e.startDate);
-
-            if (predEnd > succStart) {
-              list.push({
-                id: `conflict-seq-${pred.id}-${e.id}`,
-                type: 'chronological_violation',
-                severity: 'high',
-                title: {
-                  en: `Chronological Order Violation: ${e.projectCode}`,
-                  ar: `خطأ في الترتيب الزمني للمراحل: ${e.projectCode}`
-                },
-                description: {
-                  en: `Successor task "${e.title.en}" is scheduled on ${e.startDate}, which is BEFORE predecessor "${pred.title.en}" ends on ${pred.endDate}.`,
-                  ar: `المرحلة اللاحقة "${e.title.ar}" تبدأ في ${e.startDate}، وهو قبل نهاية المرحلة السابقة "${pred.title.ar}" في ${pred.endDate}.`
-                },
-                affectedEvents: [pred, e]
-              });
-            } else if (e.lagDays) {
-              const diffTime = succStart.getTime() - predEnd.getTime();
-              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-              if (diffDays < e.lagDays) {
-                list.push({
-                  id: `conflict-lag-${pred.id}-${e.id}`,
-                  type: 'lag_buffer_violation',
-                  severity: 'warning',
-                  title: {
-                    en: `Lag Buffer Violation: ${e.projectCode}`,
-                    ar: `تجاوز الحد الأدنى للمهلة الزمنية: ${e.projectCode}`
-                  },
-                  description: {
-                    en: `Successor "${e.title.en}" has only a ${diffDays}-day gap from "${pred.title.en}", which violates the minimum ${e.lagDays}-day lag requirement.`,
-                    ar: `الفاصل الزمني بين "${pred.title.ar}" و "${e.title.ar}" هو ${diffDays} أيام فقط، وهو يقل عن الحد الأدنى للمهلة (${e.lagDays} أيام).`
-                  },
-                  affectedEvents: [pred, e]
-                });
-              }
-            }
-          }
-        });
-      }
-    });
-
-    return list;
+    const engine = new ConflictDetectionEngine();
+    return engine.evaluateAll(events, finalSettings);
   }, [events]);
 
   return conflicts;

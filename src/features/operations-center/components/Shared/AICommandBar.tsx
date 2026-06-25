@@ -86,7 +86,7 @@ export function AICommandBar({ lang, onExecuteCommand }: AICommandBarProps) {
           type="submit"
           className="bg-brand-navy hover:bg-brand-navy/90 text-white text-xs px-5 py-2 rounded-xl font-bold transition-all shrink-0 cursor-pointer"
         >
-          {isAr ? 'تشغيل' : 'Run'}
+          {isAr ? 'تحليل' : 'Analyze'}
         </button>
       </form>
 

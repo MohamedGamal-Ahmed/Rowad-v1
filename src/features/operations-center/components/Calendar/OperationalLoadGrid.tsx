@@ -214,18 +214,37 @@ export function OperationalLoadGrid({ lang, events, onSelectEvent }: Operational
                     
                     {/* Compact display indicator */}
                     {cell.loadCount > 0 && (
-                      <div className="mt-2 space-y-1">
-                        <div className="text-[10px] font-bold text-slate-500 bg-slate-500/10 px-1.5 py-0.5 rounded-full inline-block">
-                          {cell.loadCount} {isAr ? 'عنصر' : 'Items'}
-                        </div>
-                        {cell.items.slice(0, 1).map((item) => (
-                          <div 
-                            key={item.id} 
-                            className="text-[9px] font-bold truncate px-1.5 py-0.5 rounded border border-blue-100 bg-blue-50/50 text-blue-900 dark:border-blue-900/40 dark:bg-blue-950/20 dark:text-blue-300"
-                          >
-                            {isAr ? item.title.ar : item.title.en}
+                      <div className="mt-1.5 space-y-1">
+                        {cell.items.slice(0, 2).map((item) => {
+                          const isMeeting = item.calendarEventType && (
+                            item.calendarEventType === 'meeting' ||
+                            item.calendarEventType === 'workshop' ||
+                            item.calendarEventType === 'site_visit' ||
+                            item.calendarEventType === 'client_visit' ||
+                            item.calendarEventType === 'negotiation_session'
+                          );
+
+                          return (
+                            <div 
+                              key={item.id} 
+                              className={`text-[9px] truncate px-1.5 py-0.5 rounded-md border transition-all ${
+                                isMeeting 
+                                  ? 'font-black bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border-l-[3px] border-l-indigo-600 border-indigo-200 dark:border-indigo-800/60 shadow-sm' 
+                                  : 'font-normal bg-slate-50/60 dark:bg-slate-800/20 text-slate-400 dark:text-slate-500 border-slate-150 dark:border-slate-850'
+                              }`}
+                            >
+                              <span className="inline-flex items-center gap-0.5">
+                                <span>{isMeeting ? '👥 ' : '🏁 '}</span>
+                                <span>{isAr ? item.title.ar : item.title.en}</span>
+                              </span>
+                            </div>
+                          );
+                        })}
+                        {cell.loadCount > 2 && (
+                          <div className="text-[8px] font-black text-slate-400 dark:text-slate-500 text-center uppercase tracking-wider font-mono">
+                            + {cell.loadCount - 2} {isAr ? 'إضافي' : 'more'}
                           </div>
-                        ))}
+                        )}
                       </div>
                     )}
                   </>
@@ -252,41 +271,73 @@ export function OperationalLoadGrid({ lang, events, onSelectEvent }: Operational
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {selectedDayData.items.map((e) => (
-              <div
-                key={e.id}
-                onClick={() => onSelectEvent(e.id)}
-                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/60 rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all cursor-pointer flex justify-between items-center group"
-              >
-                <div className="min-w-0 flex-1 space-y-1.5">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[9px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 px-2 py-0.5 rounded font-mono">
-                      {e.projectCode}
-                    </span>
-                    {e.hasConflict && (
-                      <span className="text-[9px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded flex items-center gap-1">
-                        <AlertTriangle className="w-3 h-3" />
-                        <span>{isAr ? 'تعارض' : 'Conflict'}</span>
+            {selectedDayData.items.map((e) => {
+              const isMeeting = e.calendarEventType && (
+                e.calendarEventType === 'meeting' ||
+                e.calendarEventType === 'workshop' ||
+                e.calendarEventType === 'site_visit' ||
+                e.calendarEventType === 'client_visit' ||
+                e.calendarEventType === 'negotiation_session'
+              );
+              return (
+                <div
+                  key={e.id}
+                  onClick={() => onSelectEvent(e.id)}
+                  className={`border rounded-2xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer flex justify-between items-center group
+                    ${isMeeting 
+                      ? 'bg-indigo-50/30 dark:bg-indigo-950/5 border-indigo-200/60 dark:border-indigo-900/40 border-l-[5px] border-l-indigo-600'
+                      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800/60'
+                    }
+                  `}
+                >
+                  <div className="min-w-0 flex-1 space-y-1.5">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[9px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 px-2 py-0.5 rounded font-mono">
+                        {e.projectCode}
                       </span>
-                    )}
-                  </div>
 
-                  <h5 className="text-sm font-extrabold text-slate-800 dark:text-slate-100 truncate group-hover:text-brand-red transition-colors">
-                    {isAr ? e.title.ar : e.title.en}
-                  </h5>
+                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded font-sans uppercase tracking-wide
+                        ${isMeeting 
+                          ? 'bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200/50' 
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
+                        }`}
+                      >
+                        {isMeeting ? (isAr ? 'اجتماع مجدول 👥' : 'Scheduled Meeting') : (isAr ? '🏁 معلم رئيسي طوال اليوم' : 'All-Day Milestone')}
+                      </span>
 
-                  <p className="text-xs text-slate-400 truncate">
-                    {isAr ? e.description?.ar : e.description?.en}
-                  </p>
+                      {e.hasConflict && (
+                        <span className="text-[9px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3" />
+                          <span>{isAr ? 'تعارض' : 'Conflict'}</span>
+                        </span>
+                      )}
+                    </div>
 
-                  <div className="flex items-center gap-3 text-[10px] text-slate-400 font-mono pt-1">
-                    <span>{e.startTime || '08:00'} - {e.endTime || '17:00'}</span>
-                    <span>|</span>
-                    <span className="font-semibold text-slate-500">{e.ownerName}</span>
+                    <h5 className={`text-sm font-extrabold truncate group-hover:text-brand-red transition-colors
+                      ${isMeeting ? 'text-indigo-900 dark:text-indigo-200' : 'text-slate-800 dark:text-slate-100'}`}
+                    >
+                      {isAr ? e.title.ar : e.title.en}
+                    </h5>
+
+                    <p className="text-xs text-slate-400 truncate">
+                      {isAr ? e.description?.ar : e.description?.en}
+                    </p>
+
+                    <div className="flex items-center gap-3 text-[10px] text-slate-400 font-mono pt-1">
+                      {isMeeting ? (
+                        <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                          {e.startTime} - {e.endTime} ({e.durationMinutes} mins)
+                        </span>
+                      ) : (
+                        <span>{isAr ? 'طوال اليوم (All-Day)' : 'All-Day Milestone'}</span>
+                      )}
+                      <span>|</span>
+                      <span className="font-semibold text-slate-500">{e.ownerName}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

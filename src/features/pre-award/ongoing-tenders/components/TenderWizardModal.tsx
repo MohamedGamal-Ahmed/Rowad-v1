@@ -448,29 +448,37 @@ export function TenderWizardModal({
                     />
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase text-gray-450 block">{isAr ? 'اسم المشروع (بالعربية) *' : 'Project Name (Arabic) *'}</label>
-                    <input
-                      type="text"
-                      required
-                      value={wizardForm.projectNameAr}
-                      onChange={e => setWizardForm(prev => ({ ...prev, projectNameAr: e.target.value }))}
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl p-2.5 font-bold text-gray-800 focus:outline-none focus:ring-1 focus:ring-brand-navy"
-                      placeholder="مشروع بناء خط نفط مكرر..."
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase text-gray-450 block">{isAr ? 'اسم المشروع (بالإنجليزي) *' : 'Project Name (English) *'}</label>
-                    <input
-                      type="text"
-                      required
-                      value={wizardForm.projectNameEn}
-                      onChange={e => setWizardForm(prev => ({ ...prev, projectNameEn: e.target.value }))}
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl p-2.5 font-bold text-gray-800 focus:outline-none focus:ring-1 focus:ring-brand-navy"
-                      placeholder="Refined Oil Pipeline Project..."
-                    />
-                  </div>
+                  {isAr ? (
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase text-gray-450 block">اسم المشروع (بالعربية) *</label>
+                      <input
+                        type="text"
+                        required
+                        value={wizardForm.projectNameAr}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setWizardForm(prev => ({ ...prev, projectNameAr: val, projectNameEn: val }));
+                        }}
+                        className="w-full bg-gray-50 border border-gray-200 rounded-xl p-2.5 font-bold text-gray-800 focus:outline-none focus:ring-1 focus:ring-brand-navy"
+                        placeholder="مشروع بناء خط نفط مكرر..."
+                      />
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase text-gray-450 block">Project Name (English) *</label>
+                      <input
+                        type="text"
+                        required
+                        value={wizardForm.projectNameEn}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setWizardForm(prev => ({ ...prev, projectNameEn: val, projectNameAr: val }));
+                        }}
+                        className="w-full bg-gray-50 border border-gray-200 rounded-xl p-2.5 font-bold text-gray-800 focus:outline-none focus:ring-1 focus:ring-brand-navy"
+                        placeholder="Refined Oil Pipeline Project..."
+                      />
+                    </div>
+                  )}
 
                   <div className="space-y-1">
                     <label className="text-[10px] font-black uppercase text-gray-400 block">{isAr ? 'الموقع الجغرافي' : 'Location'}</label>

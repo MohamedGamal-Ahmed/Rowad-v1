@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { Tender } from '../types';
 import { TenderRow } from './TenderRow';
 
@@ -12,6 +12,11 @@ interface TenderTableProps {
   lang: 'ar' | 'en';
   onSelect: (id: string | null) => void;
   onShowAlert: (msg: string) => void;
+  density?: 'compact' | 'standard';
+  visibleColumns?: { [key: string]: boolean };
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  onSort?: (field: string) => void;
 }
 
 export function TenderTable({
@@ -23,6 +28,22 @@ export function TenderTable({
   lang,
   onSelect,
   onShowAlert,
+  density = 'compact',
+  visibleColumns = {
+    health: true,
+    projectCode: true,
+    tenderNumber: true,
+    projectName: true,
+    location: true,
+    coordinator: true,
+    contractsEngineer: true,
+    techSubmissionDate: true,
+    commSubmissionDate: true,
+    daysRemaining: true,
+  },
+  sortBy = '',
+  sortOrder = 'asc',
+  onSort = () => {},
 }: TenderTableProps) {
   const isAllChecked =
     filteredTenders.length > 0 && selectedRowIds.length === filteredTenders.length;
@@ -41,35 +62,157 @@ export function TenderTable({
     );
   };
 
+  const renderSortIcon = (field: string) => {
+    if (sortBy === field) {
+      return sortOrder === 'asc' ? <ChevronUp className="w-3 h-3 text-brand-red font-black" /> : <ChevronDown className="w-3 h-3 text-brand-red font-black" />;
+    }
+    return <ChevronsUpDown className="w-3 h-3 text-slate-300" />;
+  };
+
+  const headerPadding = density === 'compact' ? 'p-2.5 text-[10px]' : 'p-4 text-xs';
+
   return (
-    <div className="bg-white rounded-[32px] border border-gray-100 shadow-sm overflow-hidden pb-4">
-      {/* Table wrapper containing true data alignment */}
-      <div className="overflow-x-auto premium-scrollbar">
-        <table className="w-full text-start border-collapse text-sans text-[15px]">
-          <thead>
-            <tr className="bg-gray-50/60 border-b border-gray-100 text-[15px] font-extrabold uppercase text-gray-400 tracking-wider">
-              <th className="py-4.5 px-5 text-center w-12">
+    <div className="bg-white rounded-2xl border border-gray-150 shadow-sm overflow-hidden">
+      {/* Table wrapper containing true data alignment with vertical and horizontal containment */}
+      <div className="overflow-x-auto overflow-y-auto max-h-[600px] sticky-scrollbar relative">
+        <table className="w-full text-left rtl:text-right border-collapse">
+          <thead className="bg-slate-50 sticky top-0 z-10 border-b border-slate-150">
+            <tr>
+              <th className={`${headerPadding} text-center w-10`}>
                 <input
                   type="checkbox"
                   checked={isAllChecked}
                   onChange={handleHeaderCheckboxChange}
-                  className="rounded border-gray-300 text-brand-navy focus:ring-brand-navy cursor-pointer w-4 h-4"
+                  className="rounded border-gray-300 text-brand-navy focus:ring-brand-navy cursor-pointer w-3.5 h-3.5"
                 />
               </th>
-              <th className="py-4.5 px-5 text-start">{isAr ? 'مؤشر الصحة' : 'Health'}</th>
-              <th className="py-4.5 px-5 text-start">{isAr ? 'كود المشروع' : 'Project Code'}</th>
-              <th className="py-4.5 px-5 text-start">{isAr ? 'رقم المناقصة' : 'Tender Number'}</th>
-              <th className="py-4.5 px-5 text-start min-w-[210px]">{isAr ? 'اسم المشروع' : 'Project Name'}</th>
-              <th className="py-4.5 px-5 text-start">{isAr ? 'الموقع الجغرافي' : 'Location'}</th>
-              <th className="py-4.5 px-5 text-start">{isAr ? 'المنسق' : 'Coordinator'}</th>
-              <th className="py-4.5 px-5 text-start">{isAr ? 'مهندس العقود' : 'Contracts Eng'}</th>
-              <th className="py-4.5 px-5 text-start">{isAr ? 'التسليم الفني' : 'Technical Sub'}</th>
-              <th className="py-4.5 px-5 text-start">{isAr ? 'التسليم المالي' : 'Commercial Sub'}</th>
-              <th className="py-4.5 px-5 text-start whitespace-nowrap">{isAr ? 'الأيام المتبقية' : 'Days Left'}</th>
-              <th className="py-4.5 px-5 text-center">{isAr ? 'الإجراءات' : 'Actions'}</th>
+              
+              {visibleColumns.health && (
+                <th 
+                  onClick={() => onSort('health')}
+                  className={`${headerPadding} font-extrabold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 select-none`}
+                >
+                  <div className="flex items-center gap-1">
+                    <span>{isAr ? 'الصحة' : 'Health'}</span>
+                    {renderSortIcon('health')}
+                  </div>
+                </th>
+              )}
+
+              {visibleColumns.projectCode && (
+                <th 
+                  onClick={() => onSort('projectCode')}
+                  className={`${headerPadding} font-extrabold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 select-none`}
+                >
+                  <div className="flex items-center gap-1">
+                    <span>{isAr ? 'كود المشروع' : 'Project Code'}</span>
+                    {renderSortIcon('projectCode')}
+                  </div>
+                </th>
+              )}
+
+              {visibleColumns.tenderNumber && (
+                <th 
+                  onClick={() => onSort('tenderNumber')}
+                  className={`${headerPadding} font-extrabold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 select-none`}
+                >
+                  <div className="flex items-center gap-1">
+                    <span>{isAr ? 'رقم المناقصة' : 'Tender No'}</span>
+                    {renderSortIcon('tenderNumber')}
+                  </div>
+                </th>
+              )}
+
+              {visibleColumns.projectName && (
+                <th 
+                  onClick={() => onSort('projectName')}
+                  className={`${headerPadding} font-extrabold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 select-none min-w-[210px]`}
+                >
+                  <div className="flex items-center gap-1">
+                    <span>{isAr ? 'اسم المشروع' : 'Project Name'}</span>
+                    {renderSortIcon('projectName')}
+                  </div>
+                </th>
+              )}
+
+              {visibleColumns.location && (
+                <th 
+                  onClick={() => onSort('location')}
+                  className={`${headerPadding} font-extrabold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 select-none`}
+                >
+                  <div className="flex items-center gap-1">
+                    <span>{isAr ? 'الموقع' : 'Location'}</span>
+                    {renderSortIcon('location')}
+                  </div>
+                </th>
+              )}
+
+              {visibleColumns.coordinator && (
+                <th 
+                  onClick={() => onSort('coordinator')}
+                  className={`${headerPadding} font-extrabold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 select-none`}
+                >
+                  <div className="flex items-center gap-1">
+                    <span>{isAr ? 'المنسق' : 'Coordinator'}</span>
+                    {renderSortIcon('coordinator')}
+                  </div>
+                </th>
+              )}
+
+              {visibleColumns.contractsEngineer && (
+                <th 
+                  onClick={() => onSort('contractsEngineer')}
+                  className={`${headerPadding} font-extrabold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 select-none`}
+                >
+                  <div className="flex items-center gap-1">
+                    <span>{isAr ? 'مهندس العقود' : 'Contracts Eng'}</span>
+                    {renderSortIcon('contractsEngineer')}
+                  </div>
+                </th>
+              )}
+
+              {visibleColumns.techSubmissionDate && (
+                <th 
+                  onClick={() => onSort('techSubmissionDate')}
+                  className={`${headerPadding} font-extrabold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 select-none`}
+                >
+                  <div className="flex items-center gap-1">
+                    <span>{isAr ? 'التسليم الفني' : 'Tech Sub'}</span>
+                    {renderSortIcon('techSubmissionDate')}
+                  </div>
+                </th>
+              )}
+
+              {visibleColumns.commSubmissionDate && (
+                <th 
+                  onClick={() => onSort('commSubmissionDate')}
+                  className={`${headerPadding} font-extrabold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 select-none`}
+                >
+                  <div className="flex items-center gap-1">
+                    <span>{isAr ? 'التسليم المالي' : 'Comm Sub'}</span>
+                    {renderSortIcon('commSubmissionDate')}
+                  </div>
+                </th>
+              )}
+
+              {visibleColumns.daysRemaining && (
+                <th 
+                  onClick={() => onSort('daysRemaining')}
+                  className={`${headerPadding} font-extrabold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 select-none whitespace-nowrap`}
+                >
+                  <div className="flex items-center gap-1">
+                    <span>{isAr ? 'الأيام المتبقية' : 'Days Left'}</span>
+                    {renderSortIcon('daysRemaining')}
+                  </div>
+                </th>
+              )}
+
+              <th className={`${headerPadding} font-extrabold text-slate-500 uppercase tracking-wider text-center w-14`}>
+                {isAr ? 'الإجراءات' : 'Actions'}
+              </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-50">
+          <tbody className="divide-y divide-slate-100 bg-white">
             {filteredTenders.length === 0 ? (
               <tr>
                 <td colSpan={12} className="p-12 text-center text-sans">
@@ -98,6 +241,8 @@ export function TenderTable({
                   onSelect={id => onSelect(id)}
                   onToggleCheck={handleToggleCheck}
                   onShowAlert={onShowAlert}
+                  density={density}
+                  visibleColumns={visibleColumns}
                 />
               ))
             )}

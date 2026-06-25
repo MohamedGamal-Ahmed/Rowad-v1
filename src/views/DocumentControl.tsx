@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   Folder, FilePlus2, FileType, Search, Filter, LayoutGrid, 
   ListFilter, Eye, CheckCircle2, AlertCircle, X, Download, Plus,
-  FileCheck2, CheckSquare, History, FileText
+  FileCheck2, CheckSquare, History, FileText,
+  Settings2, ChevronUp, ChevronDown, ChevronsUpDown, Check
 } from 'lucide-react';
 import { BiText } from '../components/BiText';
 import { Settings } from '../domain/administration/Settings';
@@ -96,6 +97,26 @@ export function DocumentControl({
   const [selectedDocId, setSelectedDocId] = useState<string | null>('D-001');
   const [toastAlert, setToastAlert] = useState<{ type: 'success' | 'info'; message: string } | null>(null);
 
+  // Unification configs (density, column selector, sorting, pagination)
+  const [density, setDensity] = useState<'compact' | 'standard'>('compact');
+  const [showColSelector, setShowColSelector] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState({
+    category: true,
+    code: true,
+    title: true,
+    sender: true,
+    version: true,
+    status: true,
+  });
+  const [sortBy, setSortBy] = useState<keyof DocumentRecord | 'title' | 'projectName'>('code');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  const toggleColumn = (col: keyof typeof visibleColumns) => {
+    setVisibleColumns(prev => ({ ...prev, [col]: !prev[col] }));
+  };
+
   // Auto clean toast alert
   useEffect(() => {
     if (toastAlert) {
@@ -159,15 +180,92 @@ export function DocumentControl({
     }
   }, [category, isAddModalOpen, documents.length]);
 
-  const filteredDocs = documents.filter(doc => {
-    const matchesSearch = doc.code.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          doc.title.en.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          doc.title.ar.includes(searchQuery) ||
-                          doc.projectName.en.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          doc.projectName.ar.includes(searchQuery);
-    const matchesCategory = categoryFilter === 'all' || doc.category === categoryFilter;
-    return matchesSearch && matchesCategory;
-  });
+  // Filtering, sorting and pagination
+  const sortedDocs = React.useMemo(() => {
+    let result = documents.filter(doc => {
+      const matchesSearch = doc.code.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                            doc.title.en.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                            doc.title.ar.includes(searchQuery) ||
+                            doc.projectName.en.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            doc.projectName.ar.includes(searchQuery);
+      const matchesCategory = categoryFilter === 'all' || doc.category === categoryFilter;
+      return matchesSearch && matchesCategory;
+    });
+
+    result.sort((a, b) => {
+      let aVal: any = '';
+      let bVal: any = '';
+
+      if (sortBy === 'title') {
+        aVal = isAr ? a.title.ar : a.title.en;
+        bVal = isAr ? b.title.ar : b.title.en;
+      } else if (sortBy === 'projectName') {
+        aVal = isAr ? a.projectName.ar : a.projectName.en;
+        bVal = isAr ? b.projectName.ar : b.projectName.en;
+      } else {
+        aVal = a[sortBy] ?? '';
+        bVal = b[sortBy] ?? '';
+      }
+
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+
+      const strA = String(aVal).toLowerCase();
+      const strB = String(bVal).toLowerCase();
+      return sortOrder === 'asc' ? strA.localeCompare(strB) : strB.localeCompare(strA);
+    });
+
+    return result;
+  }, [documents, searchQuery, categoryFilter, sortBy, sortOrder, isAr]);
+
+  const totalPages = Math.max(Math.ceil(sortedDocs.length / itemsPerPage), 1);
+  const paginatedDocs = React.useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return sortedDocs.slice(start, start + itemsPerPage);
+  }, [sortedDocs, currentPage, itemsPerPage]);
+
+  const handleSort = (field: keyof DocumentRecord | 'title' | 'projectName') => {
+    if (sortBy === field) {
+      setSortOrder(order => order === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
+    }
+    setCurrentPage(1);
+  };
+
+  const handleExportCSV = () => {
+    try {
+      const headers = ['Document Code', 'Title (EN)', 'Title (AR)', 'Category', 'Project (EN)', 'Project (AR)', 'Sender', 'Recipient', 'Date Received', 'Revision', 'Status'];
+      const rows = sortedDocs.map(d => [
+        d.code,
+        `"${d.title.en.replace(/"/g, '""')}"`,
+        `"${d.title.ar.replace(/"/g, '""')}"`,
+        d.category,
+        `"${d.projectName.en.replace(/"/g, '""')}"`,
+        `"${d.projectName.ar.replace(/"/g, '""')}"`,
+        `"${d.sender.replace(/"/g, '""')}"`,
+        `"${d.recipient.replace(/"/g, '""')}"`,
+        d.dateReceived,
+        d.version,
+        `"${(isAr ? d.status.ar : d.status.en).replace(/"/g, '""')}"`
+      ]);
+
+      const csvContent = "data:text/csv;charset=utf-8," 
+        + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+      
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `Document_Control_Export_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (e) {
+      console.error('Failed to export CSV', e);
+    }
+  };
 
   const selectedDoc = documents.find(d => d.id === selectedDocId);
 
@@ -301,51 +399,127 @@ export function DocumentControl({
         ))}
       </div>
 
-      {/* 3. Search and Quick Category Matrix */}
-      <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm space-y-4">
-        <div className="flex flex-col lg:flex-row gap-4 justify-between items-stretch">
-          <div className="relative flex-1">
-            <Search className="absolute inset-y-0 left-4 rtl:left-auto rtl:right-4 my-auto w-4 h-4 text-gray-400" />
+      {/* 3. Unified Toolbar & Grid Controls (Unifies Document Control and Project Portfolio style) */}
+      <div className="bg-white border border-gray-150 rounded-2xl p-4 shadow-sm space-y-3">
+        <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
+          
+          {/* Quick Search on Left */}
+          <div className="relative w-full md:w-96">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input 
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={isAr ? "ابحث برمز المخطط الهيكلي، أو رقم الصادر والوارد..." : "Search document code, title, sender, recipient..."}
-              className="w-full bg-gray-50 border border-gray-150 focus:border-brand-navy rounded-2xl py-3.5 pl-11 pr-5 rtl:pr-11 rtl:pl-5 text-[14px] text-brand-navy focus:outline-none focus:ring-4 focus:ring-brand-navy/5 focus:bg-white transition-all shadow-inner"
+              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+              placeholder={isAr ? "البحث السريع بالكود، الاسم، أو المرسل..." : "Quick search by code, name, or sender..."}
+              className="w-full text-xs pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-brand-red transition-all"
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <button 
-              onClick={() => setCategoryFilter('all')}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${categoryFilter === 'all' ? 'bg-brand-navy text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
+          {/* Action Buttons on Right */}
+          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto shrink-0 justify-end">
+            
+            {/* Column Selector */}
+            <div className="relative">
+              <button
+                onClick={() => setShowColSelector(!showColSelector)}
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl text-xs font-bold border border-slate-200 transition-all cursor-pointer"
+              >
+                <Settings2 className="w-4 h-4 text-slate-400" />
+                <span>{isAr ? 'الأعمدة' : 'Columns'}</span>
+              </button>
+              {showColSelector && (
+                <div className="absolute right-0 top-11 z-30 w-52 bg-white border border-slate-200 rounded-xl p-3 shadow-xl space-y-2 text-xs text-slate-700">
+                  <div className="font-extrabold text-[10px] text-slate-400 uppercase tracking-wider pb-1.5 border-b border-slate-100">{isAr ? 'إظهار الأعمدة' : 'Toggle Columns'}</div>
+                  {Object.keys(visibleColumns).map((col) => (
+                    <label key={col} className="flex items-center gap-2.5 py-1 px-1.5 hover:bg-slate-50 rounded-md cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={visibleColumns[col as keyof typeof visibleColumns]}
+                        onChange={() => toggleColumn(col as keyof typeof visibleColumns)}
+                        className="rounded text-brand-red focus:ring-brand-red w-3.5 h-3.5"
+                      />
+                      <span className="capitalize font-medium">
+                        {col === 'category' ? (isAr ? 'الفئة' : 'Category') :
+                         col === 'code' ? (isAr ? 'الكود' : 'Code') :
+                         col === 'title' ? (isAr ? 'العنوان' : 'Title') :
+                         col === 'sender' ? (isAr ? 'المرسل' : 'Originator') :
+                         col === 'version' ? (isAr ? 'الإصدار' : 'Revision') :
+                         (isAr ? 'الحالة' : 'Status')}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Density Selector */}
+            <button
+              onClick={() => setDensity(d => d === 'compact' ? 'standard' : 'compact')}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-2 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl text-xs font-bold border border-slate-200 transition-all cursor-pointer"
             >
-              {isAr ? "الكل" : "All Documents"}
+              <span className="text-[10px] text-slate-400">Density:</span>
+              <span className="capitalize text-brand-navy">{density}</span>
+            </button>
+
+            {/* Export CSV */}
+            <button
+              onClick={handleExportCSV}
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl text-xs font-bold border border-slate-200 transition-all cursor-pointer"
+            >
+              <Download className="w-4 h-4 text-slate-400" />
+              <span>{isAr ? 'تصدير' : 'Export'}</span>
+            </button>
+
+            {/* Register New Document Button */}
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="flex items-center gap-1.5 px-4 py-2 bg-brand-red hover:bg-brand-red/90 text-white rounded-xl text-xs font-black transition-all shadow-sm cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{isAr ? 'مستند جديد' : 'New Document'}</span>
+            </button>
+
+          </div>
+        </div>
+
+        {/* Inline Category Filters & Total count */}
+        <div className="flex flex-wrap gap-4 items-center pt-2.5 border-t border-slate-100 text-xs justify-between">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-slate-400 font-extrabold uppercase text-[10px] tracking-wider mr-2 rtl:ml-2">{isAr ? 'فئة المستند:' : 'Category Filter:'}</span>
+            <button 
+              onClick={() => { setCategoryFilter('all'); setCurrentPage(1); }}
+              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${categoryFilter === 'all' ? 'bg-brand-navy text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
+            >
+              {isAr ? "الكل" : "All"}
             </button>
             <button 
-              onClick={() => setCategoryFilter('Drawing')}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${categoryFilter === 'Drawing' ? 'bg-brand-navy text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
+              onClick={() => { setCategoryFilter('Drawing'); setCurrentPage(1); }}
+              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${categoryFilter === 'Drawing' ? 'bg-brand-navy text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
             >
               📂 {isAr ? "مخططات هندسية" : "Shop Drawings"}
             </button>
             <button 
-              onClick={() => setCategoryFilter('Transmittal')}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${categoryFilter === 'Transmittal' ? 'bg-brand-navy text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
+              onClick={() => { setCategoryFilter('Transmittal'); setCurrentPage(1); }}
+              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${categoryFilter === 'Transmittal' ? 'bg-brand-navy text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
             >
               ✉️ {isAr ? "محاضر إرسال" : "Transmittals"}
             </button>
             <button 
-              onClick={() => setCategoryFilter('Incoming')}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${categoryFilter === 'Incoming' ? 'bg-brand-navy text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
+              onClick={() => { setCategoryFilter('Incoming'); setCurrentPage(1); }}
+              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${categoryFilter === 'Incoming' ? 'bg-brand-navy text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
             >
               📥 {isAr ? "مستندات واردة" : "Incoming Docs"}
             </button>
             <button 
-              onClick={() => setCategoryFilter('Outgoing')}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${categoryFilter === 'Outgoing' ? 'bg-brand-navy text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
+              onClick={() => { setCategoryFilter('Outgoing'); setCurrentPage(1); }}
+              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${categoryFilter === 'Outgoing' ? 'bg-brand-navy text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
             >
               📤 {isAr ? "مستندات صادرة" : "Outgoing Docs"}
             </button>
+          </div>
+
+          <div className="text-slate-400 font-semibold font-mono text-[11px]">
+            {isAr ? `مطابقة ${sortedDocs.length} مستند` : `Found ${sortedDocs.length} matching documents`}
           </div>
         </div>
       </div>
@@ -355,65 +529,140 @@ export function DocumentControl({
         
         {/* Table segment */}
         <div className={`transition-all duration-300 ${selectedDocId ? 'xl:col-span-8' : 'xl:col-span-12'} space-y-4`}>
-          <div className="bg-white rounded-[32px] border border-gray-100 shadow-sm overflow-hidden pb-4">
-            <div className="overflow-x-auto premium-scrollbar">
-              <table className="w-full text-start border-collapse text-sans text-[15px]">
-                <thead>
-                  <tr className="bg-gray-50/60 border-b border-gray-100 text-[15px] font-extrabold uppercase text-gray-400 tracking-wider">
-                    <th className="py-4.5 px-5 text-start">{isAr ? "فئة المستند" : "Category"}</th>
-                    <th className="py-4.5 px-5 text-start">{isAr ? "كود المستند" : "Document Code"}</th>
-                    <th className="py-4.5 px-5 text-start min-w-[220px]">{isAr ? "عنوان المستند" : "Document Title"}</th>
-                    <th className="py-4.5 px-5 text-start">{isAr ? "المصدر" : "Originator"}</th>
-                    <th className="py-4.5 px-5 text-start">{isAr ? "شفرة الإصدار" : "Revision"}</th>
-                    <th className="py-4.5 px-5 text-start">{isAr ? "الحالة" : "Status"}</th>
-                    <th className="py-4.5 px-5 text-center">{isAr ? "كشف" : "View"}</th>
+          <div className="bg-white rounded-2xl border border-gray-150 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto overflow-y-auto max-h-[600px] sticky-scrollbar">
+              <table className="w-full text-xs text-left rtl:text-right border-collapse">
+                <thead className="bg-slate-50 sticky top-0 z-10 border-b border-slate-150">
+                  <tr>
+                    {visibleColumns.category && (
+                      <th 
+                        onClick={() => handleSort('category')}
+                        className="p-3 font-extrabold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 select-none text-[10px]"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span>{isAr ? "فئة المستند" : "Category"}</span>
+                          {sortBy === 'category' ? (sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <ChevronsUpDown className="w-3 h-3 text-slate-300" />}
+                        </div>
+                      </th>
+                    )}
+                    {visibleColumns.code && (
+                      <th 
+                        onClick={() => handleSort('code')}
+                        className="p-3 font-extrabold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 select-none text-[10px]"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span>{isAr ? "كود المستند" : "Document Code"}</span>
+                          {sortBy === 'code' ? (sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <ChevronsUpDown className="w-3 h-3 text-slate-300" />}
+                        </div>
+                      </th>
+                    )}
+                    {visibleColumns.title && (
+                      <th 
+                        onClick={() => handleSort('title')}
+                        className="p-3 font-extrabold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 select-none text-[10px] min-w-[220px]"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span>{isAr ? "عنوان المستند" : "Document Title"}</span>
+                          {sortBy === 'title' ? (sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <ChevronsUpDown className="w-3 h-3 text-slate-300" />}
+                        </div>
+                      </th>
+                    )}
+                    {visibleColumns.sender && (
+                      <th 
+                        onClick={() => handleSort('sender')}
+                        className="p-3 font-extrabold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 select-none text-[10px]"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span>{isAr ? "المصدر" : "Originator"}</span>
+                          {sortBy === 'sender' ? (sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <ChevronsUpDown className="w-3 h-3 text-slate-300" />}
+                        </div>
+                      </th>
+                    )}
+                    {visibleColumns.version && (
+                      <th 
+                        onClick={() => handleSort('version')}
+                        className="p-3 font-extrabold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 select-none text-[10px]"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span>{isAr ? "شفرة الإصدار" : "Revision"}</span>
+                          {sortBy === 'version' ? (sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <ChevronsUpDown className="w-3 h-3 text-slate-300" />}
+                        </div>
+                      </th>
+                    )}
+                    {visibleColumns.status && (
+                      <th className="p-3 font-extrabold text-slate-500 uppercase tracking-wider text-[10px]">
+                        {isAr ? "الحالة" : "Status"}
+                      </th>
+                    )}
+                    <th className="p-3 font-extrabold text-slate-500 uppercase tracking-wider text-center text-[10px] w-16">
+                      {isAr ? "كشف" : "View"}
+                    </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {filteredDocs.length === 0 ? (
+                <tbody className="divide-y divide-slate-100">
+                  {paginatedDocs.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="py-12 text-center text-gray-400">
                         {isAr ? "لا توجد مستندات تطابق المعايير المطلوبة." : "No engineering control documents matched selected settings."}
                       </td>
                     </tr>
                   ) : (
-                    filteredDocs.map((doc) => {
+                    paginatedDocs.map((doc) => {
                       const isSelected = doc.id === selectedDocId;
+                      const rowPadding = density === 'compact' ? 'py-1.5 px-3' : 'py-3 px-4';
                       return (
                         <tr 
                           key={doc.id}
                           onClick={() => setSelectedDocId(doc.id)}
-                          className={`hover:bg-gray-50/50 transition-all duration-150 cursor-pointer text-[15px] font-semibold text-gray-700
-                            ${isSelected ? 'bg-brand-navy/5 shadow-inner border-y' : ''}
+                          className={`hover:bg-slate-50/80 cursor-pointer transition-colors group text-gray-700 font-semibold
+                            ${isSelected ? 'bg-brand-navy/5 border-y border-brand-navy/10' : ''}
                           `}
                         >
-                          <td className="py-4.5 px-5 whitespace-nowrap">
-                            <span className="px-3.5 py-1.5 rounded-xl bg-gray-50 text-gray-600 font-extrabold text-[12px]">
-                              {doc.category}
-                            </span>
-                          </td>
-                          <td className="py-4.5 px-5 font-mono text-[12px] text-gray-400 whitespace-nowrap">{doc.code}</td>
-                          <td className="py-4.5 px-5">
-                            <BiText 
-                              text={doc.title} 
-                              primaryLang={lang}
-                              primaryClassName="font-extrabold text-brand-navy text-[16px] block tracking-tight"
-                              secondaryClassName="text-[11px] text-gray-400 leading-normal block mt-1"
-                            />
-                          </td>
-                          <td className="py-4.5 px-5 text-[13px] font-medium text-gray-500 whitespace-nowrap">{doc.sender}</td>
-                          <td className="py-4.5 px-5 font-mono text-[12px] text-gray-400">{doc.version}</td>
-                          <td className="py-4.5 px-5 whitespace-nowrap">
-                            <span className="px-3 py-1 bg-emerald-50 text-emerald-700 font-bold rounded-lg text-xs">
-                              {isAr ? doc.status.ar : doc.status.en}
-                            </span>
-                          </td>
-                          <td className="py-4.5 px-5 text-center" onClick={(e) => e.stopPropagation()}>
+                          {visibleColumns.category && (
+                            <td className={rowPadding}>
+                              <span className="px-2 py-0.5 rounded bg-slate-100 text-gray-600 font-extrabold text-[10px] uppercase">
+                                {doc.category}
+                              </span>
+                            </td>
+                          )}
+                          {visibleColumns.code && (
+                            <td className={`${rowPadding} font-mono text-[10px] text-slate-500 font-bold`}>
+                              {doc.code}
+                            </td>
+                          )}
+                          {visibleColumns.title && (
+                            <td className={rowPadding}>
+                              <BiText 
+                                text={doc.title} 
+                                primaryLang={lang}
+                                primaryClassName="font-bold text-brand-navy text-xs block tracking-tight group-hover:text-brand-red transition-colors"
+                                secondaryClassName="text-[10px] text-gray-400 leading-normal block mt-0.5"
+                              />
+                            </td>
+                          )}
+                          {visibleColumns.sender && (
+                            <td className={`${rowPadding} text-[11px] font-medium text-slate-500 max-w-[120px] truncate`}>
+                              {doc.sender}
+                            </td>
+                          )}
+                          {visibleColumns.version && (
+                            <td className={`${rowPadding} font-mono text-[10px] text-slate-500`}>
+                              {doc.version}
+                            </td>
+                          )}
+                          {visibleColumns.status && (
+                            <td className={rowPadding}>
+                              <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 font-black rounded text-[10px] uppercase">
+                                {isAr ? doc.status.ar : doc.status.en}
+                              </span>
+                            </td>
+                          )}
+                          <td className={`${rowPadding} text-center`} onClick={(e) => e.stopPropagation()}>
                             <button 
                               onClick={() => setSelectedDocId(doc.id)}
-                              className="p-1.5 hover:bg-gray-100 hover:text-brand-navy text-gray-400 rounded-lg transition-colors"
+                              className="p-1 bg-slate-50 hover:bg-brand-red hover:text-white text-slate-500 rounded-lg transition-all"
                             >
-                              <Eye className="w-5 h-5" />
+                              <Eye className="w-3.5 h-3.5" />
                             </button>
                           </td>
                         </tr>
@@ -424,6 +673,54 @@ export function DocumentControl({
               </table>
             </div>
           </div>
+
+          {/* Pagination Controls (Unified styled like ProjectList) */}
+          {sortedDocs.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between bg-white border border-gray-150 rounded-xl px-5 py-3 text-xs font-bold gap-3">
+              <div className="flex items-center gap-2 text-slate-400">
+                <span>
+                  {isAr 
+                    ? `عرض ${Math.min((currentPage - 1) * itemsPerPage + 1, sortedDocs.length)} - ${Math.min(currentPage * itemsPerPage, sortedDocs.length)} من إجمالي ${sortedDocs.length} مستندات`
+                    : `Showing ${Math.min((currentPage - 1) * itemsPerPage + 1, sortedDocs.length)} to ${Math.min(currentPage * itemsPerPage, sortedDocs.length)} of ${sortedDocs.length} documents`
+                  }
+                </span>
+                <span className="text-slate-200">|</span>
+                <div className="flex items-center gap-1.5 text-[11px]">
+                  <span>{isAr ? 'صفوف لكل صفحة:' : 'Rows per page:'}</span>
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}
+                    className="bg-slate-50 border rounded p-1 font-bold text-slate-700 cursor-pointer"
+                  >
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  {isAr ? 'السابق' : 'Prev'}
+                </button>
+                <span className="px-3.5 py-1.5 bg-brand-red/5 text-brand-red border border-brand-red/10 rounded-lg font-mono">
+                  {currentPage} / {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  {isAr ? 'التالي' : 'Next'}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Audit drawer (Right side) */}
@@ -564,23 +861,34 @@ export function DocumentControl({
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block">
                   {isAr ? "عنوان المستند أو المعاملة" : "Document & Revision Title"}
                 </label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <input
-                    type="text"
-                    required
-                    value={titleEn}
-                    onChange={(e) => setTitleEn(e.target.value)}
-                    placeholder="Document Title (English)"
-                    className="w-full bg-gray-50 border border-gray-200 focus:border-brand-navy rounded-xl px-4 py-3 text-sm font-bold text-brand-navy focus:outline-none focus:ring-4 focus:ring-brand-navy/5 transition-all"
-                  />
-                  <input
-                    type="text"
-                    required
-                    value={titleAr}
-                    onChange={(e) => setTitleAr(e.target.value)}
-                    placeholder="عنوان المستند (بالعربية)"
-                    className="w-full bg-gray-50 border border-gray-200 focus:border-brand-navy text-right rounded-xl px-4 py-3 text-sm font-bold text-brand-navy focus:outline-none focus:ring-4 focus:ring-brand-navy/5 transition-all"
-                  />
+                <div>
+                  {isAr ? (
+                    <input
+                      type="text"
+                      required
+                      value={titleAr}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setTitleAr(val);
+                        setTitleEn(val);
+                      }}
+                      placeholder="عنوان المستند (بالعربية) *"
+                      className="w-full bg-gray-50 border border-gray-200 focus:border-brand-navy text-right rounded-xl px-4 py-3 text-sm font-bold text-brand-navy focus:outline-none focus:ring-4 focus:ring-brand-navy/5 transition-all"
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      required
+                      value={titleEn}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setTitleEn(val);
+                        setTitleAr(val);
+                      }}
+                      placeholder="Document Title (English) *"
+                      className="w-full bg-gray-50 border border-gray-200 focus:border-brand-navy rounded-xl px-4 py-3 text-sm font-bold text-brand-navy focus:outline-none focus:ring-4 focus:ring-brand-navy/5 transition-all"
+                    />
+                  )}
                 </div>
               </div>
 
@@ -610,23 +918,34 @@ export function DocumentControl({
                   ))}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <input
-                    type="text"
-                    required
-                    value={projectNameEn}
-                    onChange={(e) => setProjectNameEn(e.target.value)}
-                    placeholder="Project Name (English)"
-                    className="w-full bg-gray-50 border border-gray-200 focus:border-brand-navy rounded-xl px-4 py-3 text-sm font-bold text-brand-navy focus:outline-none focus:ring-4 focus:ring-brand-navy/5 transition-all"
-                  />
-                  <input
-                    type="text"
-                    required
-                    value={projectNameAr}
-                    onChange={(e) => setProjectNameAr(e.target.value)}
-                    placeholder="اسم المشروع (بالعربية)"
-                    className="w-full bg-gray-50 border border-gray-200 focus:border-brand-navy text-right rounded-xl px-4 py-3 text-sm font-bold text-brand-navy focus:outline-none focus:ring-4 focus:ring-brand-navy/5 transition-all"
-                  />
+                <div>
+                  {isAr ? (
+                    <input
+                      type="text"
+                      required
+                      value={projectNameAr}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setProjectNameAr(val);
+                        setProjectNameEn(val);
+                      }}
+                      placeholder="اسم المشروع (بالعربية) *"
+                      className="w-full bg-gray-50 border border-gray-200 focus:border-brand-navy text-right rounded-xl px-4 py-3 text-sm font-bold text-brand-navy focus:outline-none focus:ring-4 focus:ring-brand-navy/5 transition-all"
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      required
+                      value={projectNameEn}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setProjectNameEn(val);
+                        setProjectNameAr(val);
+                      }}
+                      placeholder="Project Name (English) *"
+                      className="w-full bg-gray-50 border border-gray-200 focus:border-brand-navy rounded-xl px-4 py-3 text-sm font-bold text-brand-navy focus:outline-none focus:ring-4 focus:ring-brand-navy/5 transition-all"
+                    />
+                  )}
                 </div>
               </div>
 

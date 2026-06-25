@@ -22,8 +22,42 @@ export function ConflictPanel({ lang, events, onSelectEvent, onAutoResolve }: Co
         return 'bg-rose-50 text-brand-red border-red-200';
       case 'high':
         return 'bg-orange-50 text-orange-800 border-orange-200';
-      default:
+      case 'warning':
         return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'info':
+        return 'bg-sky-50 text-sky-700 border-sky-200';
+      default:
+        return 'bg-slate-50 text-slate-700 border-slate-200';
+    }
+  };
+
+  const getSeverityIcon = (severity: string) => {
+    switch (severity) {
+      case 'critical':
+        return {
+          icon: <AlertCircle className="w-5 h-5 text-brand-red" />,
+          bg: 'bg-rose-50'
+        };
+      case 'high':
+        return {
+          icon: <AlertTriangle className="w-5 h-5 text-orange-600" />,
+          bg: 'bg-orange-50'
+        };
+      case 'warning':
+        return {
+          icon: <AlertTriangle className="w-5 h-5 text-amber-600" />,
+          bg: 'bg-amber-50'
+        };
+      case 'info':
+        return {
+          icon: <UserCheck className="w-5 h-5 text-sky-600" />,
+          bg: 'bg-sky-50'
+        };
+      default:
+        return {
+          icon: <CheckCircle2 className="w-5 h-5 text-emerald-600" />,
+          bg: 'bg-emerald-50'
+        };
     }
   };
 
@@ -33,7 +67,7 @@ export function ConflictPanel({ lang, events, onSelectEvent, onAutoResolve }: Co
         <h3 className="text-lg font-extrabold text-slate-900 dark:text-slate-100 font-sans">
           {isAr ? 'مركز تدقيق وتعارض المخططات الزمنية' : 'Operations Schedule Diagnostics Center'}
         </h3>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-400 mt-1">
           {isAr ? 'كشف ذكي وتلقائي لتداخل الموارد، والأخطاء الكرونولوجية، والمواعيد المتداخلة' : 'System-wide evaluation of double-bookings, chronological sequence gaps, and lag buffer violations'}
         </p>
       </div>
@@ -66,6 +100,8 @@ export function ConflictPanel({ lang, events, onSelectEvent, onAutoResolve }: Co
 
           <div className="space-y-3">
             {conflictsList.map((c) => {
+              const theme = getSeverityIcon(c.severity);
+              const isInfo = c.severity === 'info';
               return (
                 <div 
                   key={c.id}
@@ -73,8 +109,8 @@ export function ConflictPanel({ lang, events, onSelectEvent, onAutoResolve }: Co
                 >
                   <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div className="flex items-start gap-3">
-                      <div className="p-2.5 bg-amber-50 text-amber-500 rounded-xl mt-0.5">
-                        <AlertTriangle className="w-5 h-5" />
+                      <div className={`p-2.5 ${theme.bg} rounded-xl mt-0.5`}>
+                        {theme.icon}
                       </div>
                       <div>
                         <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${getSeverityBadge(c.severity)}`}>
@@ -83,20 +119,22 @@ export function ConflictPanel({ lang, events, onSelectEvent, onAutoResolve }: Co
                         <h4 className="text-sm font-black text-slate-800 dark:text-slate-100 font-sans mt-1">
                           {isAr ? c.title.ar : c.title.en}
                         </h4>
-                        <p className="text-xs text-slate-400 font-sans mt-0.5">
+                        <p className="text-xs text-slate-400 font-sans mt-1 leading-relaxed">
                           {isAr ? c.description?.ar : c.description?.en}
                         </p>
                       </div>
                     </div>
 
-                    {/* Auto Resolve action button */}
-                    <button
-                      onClick={() => onAutoResolve(c)}
-                      className="flex items-center gap-1.5 bg-brand-red text-white text-xs px-4 py-2 rounded-xl font-bold hover:bg-brand-red/90 transition-all cursor-pointer shadow-sm"
-                    >
-                      <RefreshCw className="w-3.5 h-3.5 shrink-0" />
-                      <span>{isAr ? 'ترحيل وحل التعارض' : 'Auto-Resolve & Shift'}</span>
-                    </button>
+                    {/* Auto Resolve action button - only show if not info (back-to-back sequential is normal and doesn't require resolution) */}
+                    {!isInfo && (
+                      <button
+                        onClick={() => onAutoResolve(c)}
+                        className="flex items-center gap-1.5 bg-brand-red text-white text-xs px-4 py-2 rounded-xl font-bold hover:bg-brand-red/90 transition-all cursor-pointer shadow-sm"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5 shrink-0" />
+                        <span>{isAr ? 'ترحيل وحل التعارض' : 'Auto-Resolve & Shift'}</span>
+                      </button>
+                    )}
                   </div>
 
                   {/* Affected Milestones details */}
@@ -119,7 +157,7 @@ export function ConflictPanel({ lang, events, onSelectEvent, onAutoResolve }: Co
                           >
                             <span className="text-[9px] font-bold font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-400">{e.projectCode}</span>
                             <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-1 truncate">{isAr ? e.title.ar : e.title.en}</h5>
-                            <p className="text-[10px] text-slate-400 font-mono mt-0.5">{e.startDate} ({e.startTime || '08:00'})</p>
+                            <p className="text-[10px] text-slate-400 font-mono mt-0.5">{e.startDate} ({e.startTime || '08:00'} - {e.endTime || '09:00'})</p>
                           </div>
                         </React.Fragment>
                       ))}

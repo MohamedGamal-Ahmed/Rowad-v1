@@ -2,6 +2,26 @@
 
 All notable changes to the **ROWAD Enterprise Platform** will be documented in this file.
 
+## [1.6.0] - 2026-06-25
+
+### Added
+- **Milestone-Meeting Separation**: Introduced high-fidelity separation between milestones (deadlines, qualifications, submissions, reviews) and scheduled interactive meetings. Milestones are modeled as date-only events with lighter visual focus, while meetings are scheduled with specific times, durations, formats, and participants, gaining strong visual emphasis.
+- **Milestone-to-Meeting Conversion**: Added interactive scheduling and conversion capabilities in the direct command panel. Users can seamlessly schedule, edit, or revert meeting details on any pre-award milestone.
+- **Conflict Detection Hardening**: Redesigned the Conflict Detection Engine to exclusively process meetings, workshops, site visits, client visits, and negotiation sessions. Date-only milestones, reminders, and deadlines are automatically ignored by conflict rules.
+
+## [1.5.0] - 2026-06-25
+
+### Added
+- **Dynamic Field Simplification (Adaptive Inputs)**: Implemented adaptive layout logic for forms across `TenderWizardModal.tsx`, `OperationsCenterPage.tsx`, `DocumentControl.tsx`, and `ProjectExecution.tsx` to conditionally render form fields matching the active UI language. State synchronizations are handled automatically to programmatically update dual language entries, completely avoiding forced duplicate typing.
+- **Dynamic Calendar Polish (Operational Matrix)**: Refactored the calendar monthly heatmap grid to directly consume dynamic event styling themes. The cards display up to two high-fidelity milestone event labels, complete with a clean `+ X more` counter, eliminating bulky placeholders and reducing cognitive load.
+
+### Removed
+- **Duplicate Page-Level Language Switchers**: Removed local language switcher toggle buttons (e.g., from `OperationsCenterPage.tsx`) to unify state management around the central top-bar Header switcher.
+- **Operations Center Clutter Reduction**: Consolidated tabs by moving advanced PMO analytics, resource workload, and conflict diagnostics behind an extensible configuration feature flag (`SHOW_FUTURE_CAPABILITIES = false` by default for Phase 1).
+
+### Improved
+- **AI Command CTA Clarity**: Renamed the generic 'Run' / 'تشغيل' button in the Sparkles AI Command Bar to a more descriptive 'Analyze' / 'تحليل', clarifying its actual analytical capability.
+
 ## [1.3.0] - 2026-06-24
 
 ### Added

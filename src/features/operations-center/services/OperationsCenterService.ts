@@ -1,9 +1,11 @@
 import { 
-  CalendarEvent, EventModuleType, EventCategory, EventPriority, EventStatus, EventNote, EventAttachment 
+  CalendarEvent, EventModuleType, EventCategory, EventPriority, EventStatus, EventNote, EventAttachment, CalendarEventType 
 } from '../types';
 import { initialTenders } from '../../../views/OngoingTenders';
 import { mockExecutionData } from '../../../views/ProjectExecution';
 import { mockDocuments, DocumentRecord } from '../../../views/DocumentControl';
+import { Settings } from '../../../domain/administration/Settings';
+import { ConflictDetectionEngine } from './ConflictEngine';
 
 export class OperationsCenterService {
   /**
@@ -11,6 +13,36 @@ export class OperationsCenterService {
    */
   private generateId(): string {
     return 'ev-man-' + Math.random().toString(36).substring(2, 9);
+  }
+
+  /**
+   * Helper to fetch meeting scheduling metadata for Pre-Award milestones
+   */
+  private getEventScheduling(eventId: string, scheduledMeta: any, defaultType: CalendarEventType) {
+    const meta = scheduledMeta[eventId];
+    if (meta) {
+      return {
+        calendarEventType: meta.calendarEventType || CalendarEventType.MEETING,
+        startTime: meta.startTime,
+        endTime: meta.endTime,
+        durationMinutes: meta.durationMinutes,
+        meetingType: meta.meetingType,
+        meetingLink: meta.meetingLink,
+        meetingRoom: meta.meetingRoom,
+        attendees: meta.attendees
+      };
+    } else {
+      return {
+        calendarEventType: defaultType,
+        startTime: undefined,
+        endTime: undefined,
+        durationMinutes: undefined,
+        meetingType: undefined,
+        meetingLink: undefined,
+        meetingRoom: undefined,
+        attendees: undefined
+      };
+    }
   }
 
   /**
@@ -22,6 +54,9 @@ export class OperationsCenterService {
     // 1. Pre-Award Tenders Integration
     const rawTenders = localStorage.getItem('preaward_tenders_db');
     const tenders = rawTenders ? JSON.parse(rawTenders) : initialTenders;
+
+    const rawScheduledMeta = localStorage.getItem('operations_preaward_scheduling_metadata');
+    const scheduledMeta = rawScheduledMeta ? JSON.parse(rawScheduledMeta) : {};
 
     tenders.forEach((t: any) => {
       const pCode = t.projectCode || 'PC-PRE-AWARD';
@@ -73,9 +108,12 @@ export class OperationsCenterService {
       const alignDate = t.alignmentDate || '2026-07-05';
       const commDate = t.commSubmissionDate || '2026-07-10';
 
-      // EVENT 1: Technical Kickoff Meeting
+      const kickoffId = `${t.id}-kickoff`;
+      const kickoffSched = this.getEventScheduling(kickoffId, scheduledMeta, CalendarEventType.MILESTONE);
+
+      // EVENT 1: Technical Kickoff Meeting / Milestone
       events.push({
-        id: `${t.id}-kickoff`,
+        id: kickoffId,
         title: {
           en: `Technical Kickoff - ${t.projectName.en}`,
           ar: `الاجتماع التمهيدي الفني - ${t.projectName.ar}`
@@ -96,8 +134,7 @@ export class OperationsCenterService {
         status: t.daysRemaining > 20 ? EventStatus.COMPLETED : EventStatus.IN_PROGRESS,
         startDate: kickOffDate,
         endDate: kickOffDate,
-        startTime: '09:00',
-        endTime: '11:00',
+        ...kickoffSched,
         predecessorIds: [],
         successorIds: [`${t.id}-risk`],
         lagDays: 3,
@@ -116,9 +153,12 @@ export class OperationsCenterService {
         lucideIconName: 'PlayCircle'
       });
 
+      const riskId = `${t.id}-risk`;
+      const riskSched = this.getEventScheduling(riskId, scheduledMeta, CalendarEventType.MILESTONE);
+
       // EVENT 2: Risk Assessment Check
       events.push({
-        id: `${t.id}-risk`,
+        id: riskId,
         title: {
           en: `Risk Assessment Review - ${t.projectName.en}`,
           ar: `مراجعة تقييم المخاطر - ${t.projectName.ar}`
@@ -139,9 +179,8 @@ export class OperationsCenterService {
         status: EventStatus.IN_PROGRESS,
         startDate: riskDueDate,
         endDate: riskDueDate,
-        startTime: '13:00',
-        endTime: '15:00',
-        predecessorIds: [`${t.id}-kickoff`],
+        ...riskSched,
+        predecessorIds: [kickoffId],
         successorIds: [`${t.id}-tech`],
         lagDays: 6,
         sourceId: t.id,
@@ -159,9 +198,12 @@ export class OperationsCenterService {
         lucideIconName: 'AlertTriangle'
       });
 
+      const techId = `${t.id}-tech`;
+      const techSched = this.getEventScheduling(techId, scheduledMeta, CalendarEventType.MILESTONE);
+
       // EVENT 3: Technical Submission Deadline
       events.push({
-        id: `${t.id}-tech`,
+        id: techId,
         title: {
           en: `Technical Proposal Submission - ${t.projectName.en}`,
           ar: `تقديم العطاء الفني - ${t.projectName.ar}`
@@ -182,9 +224,8 @@ export class OperationsCenterService {
         status,
         startDate: techDate,
         endDate: techDate,
-        startTime: '12:00',
-        endTime: '14:00',
-        predecessorIds: [`${t.id}-risk`],
+        ...techSched,
+        predecessorIds: [riskId],
         successorIds: [`${t.id}-alignment`],
         lagDays: 4,
         sourceId: t.id,
@@ -202,9 +243,12 @@ export class OperationsCenterService {
         lucideIconName: 'FileCheck'
       });
 
+      const alignId = `${t.id}-alignment`;
+      const alignSched = this.getEventScheduling(alignId, scheduledMeta, CalendarEventType.MILESTONE);
+
       // EVENT 4: Client Alignment Meeting
       events.push({
-        id: `${t.id}-alignment`,
+        id: alignId,
         title: {
           en: `Client Alignment Workshop - ${t.projectName.en}`,
           ar: `ورشة التنسيق مع العميل - ${t.projectName.ar}`
@@ -225,9 +269,8 @@ export class OperationsCenterService {
         status: EventStatus.WAITING_FOR_OTHERS,
         startDate: alignDate,
         endDate: alignDate,
-        startTime: '10:00',
-        endTime: '12:30',
-        predecessorIds: [`${t.id}-tech`],
+        ...alignSched,
+        predecessorIds: [techId],
         successorIds: [`${t.id}-comm`],
         lagDays: 5,
         sourceId: t.id,
@@ -245,9 +288,12 @@ export class OperationsCenterService {
         lucideIconName: 'Users'
       });
 
+      const commId = `${t.id}-comm`;
+      const commSched = this.getEventScheduling(commId, scheduledMeta, CalendarEventType.MILESTONE);
+
       // EVENT 5: Commercial Submission Deadline
       events.push({
-        id: `${t.id}-comm`,
+        id: commId,
         title: {
           en: `Commercial Bid Opening - ${t.projectName.en}`,
           ar: `فتح المظاريف المالية والأسعار - ${t.projectName.ar}`
@@ -268,9 +314,8 @@ export class OperationsCenterService {
         status: EventStatus.PENDING,
         startDate: commDate,
         endDate: commDate,
-        startTime: '11:00',
-        endTime: '13:00',
-        predecessorIds: [`${t.id}-alignment`],
+        ...commSched,
+        predecessorIds: [alignId],
         successorIds: [],
         lagDays: 0,
         sourceId: t.id,
@@ -378,8 +423,9 @@ export class OperationsCenterService {
         status,
         startDate: r.submittedDate || '2026-06-25',
         endDate: r.submittedDate || '2026-06-25',
-        startTime: '08:00',
-        endTime: '10:00',
+        calendarEventType: CalendarEventType.DEADLINE,
+        startTime: undefined,
+        endTime: undefined,
         predecessorIds: [],
         successorIds: [],
         sourceId: r.id,
@@ -429,8 +475,9 @@ export class OperationsCenterService {
         status,
         startDate: d.dateReceived || '2026-06-18',
         endDate: d.dateReceived || '2026-06-18',
-        startTime: '14:00',
-        endTime: '15:00',
+        calendarEventType: CalendarEventType.DEADLINE,
+        startTime: undefined,
+        endTime: undefined,
         predecessorIds: [],
         successorIds: [],
         sourceId: d.id,
@@ -471,72 +518,52 @@ export class OperationsCenterService {
 
   /**
    * Internal routine to evaluate scheduling conflicts across the portfolio:
-   * - Resource Overlaps: Same owner assigned to meetings/events at identical hours
+   * - Resource Overlaps: Same employee assigned to meetings/events at identical hours
    * - Chronological Errors: Predecessor date scheduled LATER than successor date
    * - Lag Buffer Violations: Successor scheduled within violating lagDays buffer
    */
   private detectAndApplyConflicts(events: CalendarEvent[]): void {
-    const timeRanges: { [key: string]: Array<{ id: string; start: Date; end: Date; owner: string }> } = {};
+    let settings: Settings | null = null;
+    try {
+      const saved = localStorage.getItem('pmo_enterprise_settings');
+      if (saved) {
+        settings = JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error('Error parsing settings in OperationsCenterService:', e);
+    }
 
+    const finalSettings: Settings = settings || {
+      conflictSettings: {
+        minGapBetweenMeetings: 30,
+        travelBuffer: 15,
+        conflictThreshold: 0,
+        allowBackToBack: true
+      }
+    } as any;
+
+    // Reset all flags first
     events.forEach(e => {
-      e.hasConflict = false; // Reset first
-
-      // Chronological Check via Predecessors
-      if (e.predecessorIds && e.predecessorIds.length > 0) {
-        e.predecessorIds.forEach(pId => {
-          const pred = events.find(item => item.id === pId);
-          if (pred) {
-            const predEnd = new Date(pred.endDate);
-            const succStart = new Date(e.startDate);
-            
-            // Check chronological order violation
-            if (predEnd > succStart) {
-              e.hasConflict = true;
-              pred.hasConflict = true;
-            } else if (e.lagDays) {
-              // Lag buffer violation check
-              const diffTime = succStart.getTime() - predEnd.getTime();
-              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-              if (diffDays < e.lagDays) {
-                e.hasConflict = true;
-              }
-            }
-          }
-        });
-      }
-
-      // Populate resource time tracking for double-bookings
-      if (e.ownerName && e.startDate && e.startTime && e.endTime && e.status !== EventStatus.COMPLETED) {
-        const key = `${e.ownerName}_${e.startDate}`;
-        if (!timeRanges[key]) {
-          timeRanges[key] = [];
-        }
-        
-        try {
-          const start = new Date(`${e.startDate}T${e.startTime}:00`);
-          const end = new Date(`${e.startDate}T${e.endTime}:00`);
-          timeRanges[key].push({ id: e.id, start, end, owner: e.ownerName });
-        } catch (err) {}
-      }
+      e.hasConflict = false;
     });
 
-    // Detect double bookings
-    Object.keys(timeRanges).forEach(key => {
-      const slots = timeRanges[key];
-      if (slots.length > 1) {
-        for (let i = 0; i < slots.length; i++) {
-          for (let j = i + 1; j < slots.length; j++) {
-            const s1 = slots[i];
-            const s2 = slots[j];
-            // Overlap check
-            if (s1.start < s2.end && s2.start < s1.end) {
-              const ev1 = events.find(item => item.id === s1.id);
-              const ev2 = events.find(item => item.id === s2.id);
-              if (ev1) ev1.hasConflict = true;
-              if (ev2) ev2.hasConflict = true;
-            }
+    const engine = new ConflictDetectionEngine();
+    const results = engine.evaluateAll(events, finalSettings);
+
+    results.forEach(res => {
+      // Set hasConflict = true ONLY for real conflicts (double bookings, sequence errors, lag violations)
+      // Sequential/Back-to-back and travel warnings do not trigger hard conflict state on events
+      if (
+        res.type === 'double_booking' || 
+        res.type === 'chronological_violation' || 
+        res.type === 'lag_buffer_violation'
+      ) {
+        res.affectedEvents.forEach(affected => {
+          const ev = events.find(item => item.id === affected.id);
+          if (ev) {
+            ev.hasConflict = true;
           }
-        }
+        });
       }
     });
   }
@@ -685,6 +712,26 @@ export class OperationsCenterService {
 
             tenders[tIdx] = tender;
             localStorage.setItem('preaward_tenders_db', JSON.stringify(tenders));
+
+            // ALSO save meeting metadata overrides
+            const rawScheduledMeta = localStorage.getItem('operations_preaward_scheduling_metadata');
+            const scheduledMeta = rawScheduledMeta ? JSON.parse(rawScheduledMeta) : {};
+            
+            if (event.calendarEventType && event.calendarEventType !== CalendarEventType.MILESTONE) {
+              scheduledMeta[event.id] = {
+                calendarEventType: event.calendarEventType,
+                startTime: event.startTime,
+                endTime: event.endTime,
+                durationMinutes: event.durationMinutes,
+                meetingType: event.meetingType,
+                meetingLink: event.meetingLink,
+                meetingRoom: event.meetingRoom,
+                attendees: event.attendees
+              };
+            } else {
+              delete scheduledMeta[event.id];
+            }
+            localStorage.setItem('operations_preaward_scheduling_metadata', JSON.stringify(scheduledMeta));
           }
         }
         return true;

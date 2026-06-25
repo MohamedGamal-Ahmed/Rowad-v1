@@ -13,6 +13,7 @@ import { TenderService } from './services/TenderService';
 import { ProjectControlsService } from './services/ProjectControlsService';
 import { ProjectControlsMapper } from './mappers/ProjectControlsMapper';
 import { OperationsCenterPage } from './features/operations-center';
+import { ProjectsPage } from './views/ProjectsPage';
 
 export default function App() {
   const [lang, setLang] = useState<'ar' | 'en'>('ar');
@@ -29,9 +30,22 @@ export default function App() {
 
   // Configurable administrative settings
   const [settings, setSettings] = useState<Settings>(() => {
+    const defaultConflictSettings = {
+      minGapBetweenMeetings: 30,
+      travelBuffer: 15,
+      conflictThreshold: 0,
+      allowBackToBack: true
+    };
+
     const saved = localStorage.getItem('pmo_enterprise_settings');
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
+      try { 
+        const parsed = JSON.parse(saved);
+        if (!parsed.conflictSettings) {
+          parsed.conflictSettings = defaultConflictSettings;
+        }
+        return parsed; 
+      } catch (e) {}
     }
     
     // Check and migrate legacy preaward timeline rules if they exist
@@ -90,6 +104,12 @@ export default function App() {
       healthSettings: {
         dueSoonThresholdDays: 7,
         overdueThresholdDays: 0
+      },
+      conflictSettings: {
+        minGapBetweenMeetings: 30,
+        travelBuffer: 15,
+        conflictThreshold: 0,
+        allowBackToBack: true
       }
     };
   });
@@ -216,6 +236,7 @@ export default function App() {
             <OperationsCenterPage 
               lang={lang}
               onNavigateToView={handleNavigate}
+              settings={settings}
             />
           ) : currentView === 'ongoing-tenders' ? (
             <OngoingTenders 
@@ -224,19 +245,17 @@ export default function App() {
               onUpdateList={handleUpdateTendersList}
               settings={settings}
             />
-          ) : currentView === 'project-execution' ? (
-            <ProjectExecution 
-              lang={lang} 
-              records={executionRecords}
-              onUpdateRecords={handleUpdateRecordsList}
-              settings={settings}
-            />
           ) : currentView === 'document-control' ? (
             <DocumentControl 
               lang={lang} 
               documents={documentRecords}
               onUpdateDocuments={setDocumentRecords}
               settings={settings}
+            />
+          ) : currentView === 'projects' ? (
+            <ProjectsPage 
+              lang={lang} 
+              settings={settings} 
             />
           ) : currentView === 'settings' ? (
             <SettingsView 

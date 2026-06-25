@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import { useCalendarEvents } from './hooks/useCalendarEvents';
 import { EventModuleType, EventCategory, EventPriority, EventStatus, CalendarEvent } from './types';
+import { Settings } from '../../domain/administration/Settings';
 
 // Components
 import { AICommandBar } from './components/Shared/AICommandBar';
@@ -17,13 +18,15 @@ import { WorkloadPanel } from './components/Workload/WorkloadPanel';
 import { ConflictPanel } from './components/Conflicts/ConflictPanel';
 import { AnalyticsPanel } from './components/Analytics/AnalyticsPanel';
 
+const SHOW_FUTURE_CAPABILITIES = false;
+
 interface OperationsCenterPageProps {
   lang: 'ar' | 'en';
   onNavigateToView: (viewId: string) => void;
+  settings?: Settings;
 }
 
-export default function OperationsCenterPage({ lang: initialLang, onNavigateToView }: OperationsCenterPageProps) {
-  const [lang, setLang] = useState<'ar' | 'en'>(initialLang);
+export default function OperationsCenterPage({ lang, onNavigateToView, settings }: OperationsCenterPageProps) {
   const isAr = lang === 'ar';
 
   const [activeTab, setActiveTab] = useState<'mywork' | 'calendar' | 'agenda' | 'timeline' | 'kanban' | 'workload' | 'conflicts' | 'analytics'>('mywork');
@@ -175,14 +178,6 @@ export default function OperationsCenterPage({ lang: initialLang, onNavigateToVi
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Lang switcher */}
-            <button
-              onClick={() => setLang(prev => prev === 'en' ? 'ar' : 'en')}
-              className="text-xs bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 px-3 py-2 rounded-xl text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-50 cursor-pointer"
-            >
-              {isAr ? 'English (EN)' : 'العربية (AR)'}
-            </button>
-
             {/* Custom Manual Milestone form trigger */}
             <button
               onClick={() => setShowNewEventForm(!showNewEventForm)}
@@ -205,39 +200,64 @@ export default function OperationsCenterPage({ lang: initialLang, onNavigateToVi
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              {isAr ? (
+                <div>
+                  <label className="text-slate-400 font-bold block mb-1">العنوان (العربية) *:</label>
+                  <input 
+                    type="text" 
+                    value={newEventTitleAr} 
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setNewEventTitleAr(val);
+                      setNewEventTitleEn(val);
+                    }}
+                    placeholder="مثال: ورشة عمل الشراكة الاستراتيجية لتنفيذ النفق"
+                    className="w-full border border-slate-200 dark:border-slate-700 bg-transparent rounded-lg p-2 text-slate-800 dark:text-slate-100 focus:outline-none"
+                    required
+                  />
+                </div>
+              ) : (
+                <div>
+                  <label className="text-slate-400 font-bold block mb-1">Title (EN) *:</label>
+                  <input 
+                    type="text" 
+                    value={newEventTitleEn} 
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setNewEventTitleEn(val);
+                      setNewEventTitleAr(val);
+                    }}
+                    placeholder="e.g., Joint Venture Coordination Workshop"
+                    className="w-full border border-slate-200 dark:border-slate-700 bg-transparent rounded-lg p-2 text-slate-800 dark:text-slate-100 focus:outline-none"
+                    required
+                  />
+                </div>
+              )}
               <div>
-                <label className="text-slate-400 font-bold block mb-1">Title (EN):</label>
+                <label className="text-slate-400 font-bold block mb-1">
+                  {isAr ? 'الوصف والتفاصيل:' : 'Description:'}
+                </label>
                 <input 
                   type="text" 
-                  value={newEventTitleEn} 
-                  onChange={(e) => setNewEventTitleEn(e.target.value)}
-                  placeholder="e.g., Joint Venture Coordination Workshop"
+                  value={isAr ? newEventDescAr : newEventDescEn} 
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (isAr) {
+                      setNewEventDescAr(val);
+                      setNewEventDescEn(val);
+                    } else {
+                      setNewEventDescEn(val);
+                      setNewEventDescAr(val);
+                    }
+                  }}
+                  placeholder={isAr ? 'تفاصيل المخرجات أو التنسيق...' : 'Details of alignment or specific deliverables...'}
                   className="w-full border border-slate-200 dark:border-slate-700 bg-transparent rounded-lg p-2 text-slate-800 dark:text-slate-100 focus:outline-none"
-                  required
                 />
               </div>
               <div>
-                <label className="text-slate-400 font-bold block mb-1">العنوان (العربية):</label>
-                <input 
-                  type="text" 
-                  value={newEventTitleAr} 
-                  onChange={(e) => setNewEventTitleAr(e.target.value)}
-                  placeholder="مثال: ورشة عمل الشراكة الاستراتيجية لتنفيذ النفق"
-                  className="w-full border border-slate-200 dark:border-slate-700 bg-transparent rounded-lg p-2 text-slate-800 dark:text-slate-100 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="text-slate-400 font-bold block mb-1">Description (EN):</label>
-                <input 
-                  type="text" 
-                  value={newEventDescEn} 
-                  onChange={(e) => setNewEventDescEn(e.target.value)}
-                  placeholder="Details of alignment or specific deliverables..."
-                  className="w-full border border-slate-200 dark:border-slate-700 bg-transparent rounded-lg p-2 text-slate-800 dark:text-slate-100 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="text-slate-400 font-bold block mb-1">تاريخ الجدولة المخطط لها:</label>
+                <label className="text-slate-400 font-bold block mb-1">
+                  {isAr ? 'تاريخ الجدولة المخطط لها:' : 'Scheduled Planned Date:'}
+                </label>
                 <input 
                   type="date" 
                   value={newEventDate} 
@@ -276,9 +296,11 @@ export default function OperationsCenterPage({ lang: initialLang, onNavigateToVi
             { id: 'agenda', label: { en: 'High-Density Chronicle', ar: 'الأجندة المفصلة' }, icon: List },
             { id: 'timeline', label: { en: 'Gantt Tracks', ar: 'المخطط الزمني (غانت)' }, icon: Sliders },
             { id: 'kanban', label: { en: 'Status Board', ar: 'لوحة كانبان' }, icon: Kanban },
-            { id: 'workload', label: { en: 'Resource Capacity', ar: 'طاقة الموارد' }, icon: Users },
-            { id: 'conflicts', label: { en: 'Diagnostics', ar: 'التدقيق والتعارضات' }, icon: AlertTriangle, alertCount: conflictsCount },
-            { id: 'analytics', label: { en: 'PMO Analytics', ar: 'إحصائيات الجودة' }, icon: TrendingUp }
+            ...(SHOW_FUTURE_CAPABILITIES ? [
+              { id: 'workload', label: { en: 'Resource Capacity', ar: 'طاقة الموارد' }, icon: Users },
+              { id: 'conflicts', label: { en: 'Diagnostics', ar: 'التدقيق والتعارضات' }, icon: AlertTriangle, alertCount: conflictsCount },
+              { id: 'analytics', label: { en: 'PMO Analytics', ar: 'إحصائيات الجودة' }, icon: TrendingUp }
+            ] : [])
           ].map((tab) => {
             const IconComponent = tab.icon;
             const isActive = activeTab === tab.id;
@@ -391,6 +413,7 @@ export default function OperationsCenterPage({ lang: initialLang, onNavigateToVi
           onAddNote={addEventNote}
           onAttachFile={attachFileToEvent}
           onNavigateToView={onNavigateToView}
+          onUpdateDetails={updateEventDetails}
         />
       )}
     </div>

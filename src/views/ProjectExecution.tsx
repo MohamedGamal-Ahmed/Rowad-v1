@@ -1178,23 +1178,34 @@ export function ProjectExecution({
                   ))}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <input
-                    type="text"
-                    required
-                    value={projNameEn}
-                    onChange={(e) => setProjNameEn(e.target.value)}
-                    placeholder="Project Name (English)"
-                    className="w-full bg-gray-50 border border-gray-200 focus:border-brand-navy rounded-xl px-4 py-3 text-sm font-bold text-brand-navy focus:outline-none focus:ring-4 focus:ring-brand-navy/5 transition-all"
-                  />
-                  <input
-                    type="text"
-                    required
-                    value={projNameAr}
-                    onChange={(e) => setProjNameAr(e.target.value)}
-                    placeholder="اسم المشروع (بالعربية)"
-                    className="w-full bg-gray-50 border border-gray-200 focus:border-brand-navy rounded-xl px-4 py-3 text-sm font-bold text-brand-navy text-right focus:outline-none focus:ring-4 focus:ring-brand-navy/5 transition-all"
-                  />
+                <div>
+                  {isAr ? (
+                    <input
+                      type="text"
+                      required
+                      value={projNameAr}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setProjNameAr(val);
+                        setProjNameEn(val);
+                      }}
+                      placeholder="اسم المشروع (بالعربية) *"
+                      className="w-full bg-gray-50 border border-gray-200 focus:border-brand-navy rounded-xl px-4 py-3 text-sm font-bold text-brand-navy text-right focus:outline-none focus:ring-4 focus:ring-brand-navy/5 transition-all"
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      required
+                      value={projNameEn}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setProjNameEn(val);
+                        setProjNameAr(val);
+                      }}
+                      placeholder="Project Name (English) *"
+                      className="w-full bg-gray-50 border border-gray-200 focus:border-brand-navy rounded-xl px-4 py-3 text-sm font-bold text-brand-navy focus:outline-none focus:ring-4 focus:ring-brand-navy/5 transition-all"
+                    />
+                  )}
                 </div>
               </div>
 
