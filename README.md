@@ -245,7 +245,7 @@ Execute the following commands in the root directory:
 ### Implemented Features
 * **Bilingual Framework**: Complete real-time English and Arabic conversion across all active visual sheets.
 * **Modular Pre-Award Estimator**: Full five-step wizard with real-time bidding bond (2%) and schedule calculations.
-* **Project Controls Engine**: Real-time segregated transactional registers.
+* **Project Controls Engine & Modular Workspace**: Real-time segregated transactional registers. The project execution workspace has been modularized by deconstructing `ProjectWorkspace.tsx` and extracting `SubcontractorsPanel.tsx`, `DocumentsPanel.tsx`, and `AttachmentsPanel.tsx` into standalone features.
 * **Single Paper Report Generator**: Fully operational, read-only dynamic compiler. It aggregates site data on-the-fly and generates print-ready sheets. No SQL database table overhead.
 * **EDMS discipline-based filter system**: Maker-Checker transmittals working flawlessly.
 

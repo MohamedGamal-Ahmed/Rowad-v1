@@ -2,6 +2,18 @@
 
 All notable changes to the **ROWAD Enterprise Platform** will be documented in this file.
 
+## [1.7.0] - 2026-06-28
+
+### Added
+- **Project Workspace Tab Deconstruction**: Extracted complex tab elements from the massive `ProjectWorkspace.tsx` component into their own standalone, single-responsibility views inside `/src/features/projects/components/workspace/`:
+  - `SubcontractorsPanel.tsx`: Houses the relational subcontract assignment form, certified subcontractors register selection, and associated contractual attachments.
+  - `DocumentsPanel.tsx`: Powers the technical and commercial document registry (Doc Control) with localized status and priority tracking.
+  - `AttachmentsPanel.tsx`: Handles the interactive drag-and-drop contract PDF and DWG vault upload system.
+- **Relational Repository Binding**: Re-bound all components to use clean, standard database/repository API methods (`getContractors()`, `getScopes()`, `getDocTypes()`) rather than deprecated helpers.
+
+### Fixed
+- **Nested Relative Import Paths**: Corrected nested relative folder mapping issues (`../../../../`) in newly extracted sub-components, achieving 100% linter and TypeScript compiler compliance.
+
 ## [1.6.0] - 2026-06-25
 
 ### Added

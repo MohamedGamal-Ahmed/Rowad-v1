@@ -85,6 +85,15 @@ To run immediate validation sweeps, consult [Immediate Diagnostics in the Quick 
 * **Interactive Operations Command Panel**: Embedded interactive meeting-scheduling sub-modules inside `/src/features/operations-center/components/Shared/OperationsCommandPanel.tsx`, allowing estimators to schedule meetings on any pre-award milestone with real-time end-time calculation, bilingual forms, and revert-to-milestone support.
 * **Differentiated Calendar & List Rendering**: Redesigned the calendar monthly heatmap cell labels and day-expansion records to render milestones as soft, low-contrast pastel items, while showcasing meetings with strong visual borders, participant icons, and duration alerts.
 
+### ✅ Milestone 12: Project Workspace Refactoring & Feature Decomposition (v1.7.0)
+* **God Component Elimination**: Decomposed the massive 2,500-line `ProjectWorkspace.tsx` view component, shrinking its footprint to under 2,100 lines and significantly improving maintainability.
+* **Tab-Based Modularization**: Extracted massive tab views and their associated state/forms into high-fidelity modular presentation components:
+  * `SubcontractorsPanel.tsx`: Houses the relational subcontract assignment form and lists assigned subcontractors with direct attachments support.
+  * `DocumentsPanel.tsx`: Encapsulates the technical and commercial document registry (Doc Control) and the contextual attachments list.
+  * `AttachmentsPanel.tsx`: Powers the interactive drag-and-drop contract file and PDF vault upload system.
+* **Relational Repository Binding**: Bound components to the correct `MasterDataRepository` operations (`getContractors()`, `getScopes()`, `getDocTypes()`) rather than deprecated helper methods.
+* **100% Compiler & Lint Safety**: Fixed relative path resolution layers (using accurate nested folder paths `../../../../`) ensuring 100% clean builds with zero circular imports.
+
 ---
 
 ## 3. Sprint Roadmap (Pendings & Backlog)
