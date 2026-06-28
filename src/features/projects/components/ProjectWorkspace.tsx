@@ -23,6 +23,9 @@ import { ContextualAttachmentsList } from './workspace/ContextualAttachmentsList
 import { ActivityFeedTimeline } from './workspace/ActivityFeedTimeline';
 import { GlobalSearchPanel } from './workspace/GlobalSearchPanel';
 import { SprReportingEngine } from './registers/SprReportingEngine';
+import { SubcontractorsPanel } from './workspace/SubcontractorsPanel';
+import { DocumentsPanel } from './workspace/DocumentsPanel';
+import { AttachmentsPanel } from './workspace/AttachmentsPanel';
 
 interface ProjectWorkspaceProps {
   projectId: string;
@@ -2006,449 +2009,42 @@ export function ProjectWorkspace({
         )}
 
         {activeTab === 'subcontractors' && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest font-mono">
-                {isAr ? 'عقود المقاولين من الباطن المرتبطة بالمشروع' : 'Assigned Subcontractors & Trade Packages'}
-              </h3>
-              {!showForm && (
-                <button
-                  onClick={() => setShowForm(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-red text-white hover:bg-brand-red-dark rounded-lg text-[10px] font-bold transition-all cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>{isAr ? 'إسناد حزمة أعمال لمقاول باطن' : 'Assign Subcontractor'}</span>
-                </button>
-              )}
-            </div>
-
-            {showForm ? (
-              /* Specialized Subcontract Form (incorporates relational ContractorMaster and ScopeMaster) */
-              <form onSubmit={handleCreateSubcontract} className="bg-slate-50 dark:bg-slate-950/40 p-5 rounded-2xl border border-slate-100 dark:border-slate-850 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                <div className="md:col-span-2 font-bold border-b pb-1 text-slate-600 dark:text-slate-300">
-                  {isAr ? 'إسناد حزمة أعمال من الباطن لشركة معتمدة' : 'Relational Subcontract Assignment Form'}
-                </div>
-                
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase">{isAr ? 'رقم العقد من الباطن (مطلوب)' : 'Subcontract Number'}</label>
-                  <input required type="text" value={subNum} onChange={e => setSubNum(e.target.value)} placeholder="e.g. SUB-ZED-CIV-105" className="w-full p-2 border rounded-lg bg-white text-slate-800" />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase">{isAr ? 'المقاول من الباطن (من السجل المعتمد)' : 'Subcontractor (from certified register)'}</label>
-                  <select required value={subCtrId} onChange={e => setSubCtrId(e.target.value)} className="w-full p-2 border rounded-lg bg-white text-slate-800">
-                    <option value="">-- Choose Contractor --</option>
-                    {masterContractors.map(c => (
-                      <option key={c.id} value={c.id}>{isAr && c.companyNameAr ? c.companyNameAr : c.companyName} ({c.code})</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase">{isAr ? 'نطاق الأعمال المعتمد (من معيار النطاقات)' : 'Scope of Work (from Scope Master)'}</label>
-                  <select required value={subScopeId} onChange={e => setSubScopeId(e.target.value)} className="w-full p-2 border rounded-lg bg-white text-slate-800">
-                    <option value="">-- Choose Scope --</option>
-                    {masterScopes.map(s => (
-                      <option key={s.id} value={s.id}>{isAr && s.nameAr ? s.nameAr : s.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase">{isAr ? 'قيمة العقد الكلية من الباطن' : 'Total Subcontract Amount'}</label>
-                  <input required type="number" value={subTotalAmt || ''} onChange={e => handleSubTotalAmtChange(Number(e.target.value))} className="w-full p-2 border rounded-lg bg-white text-slate-800" />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase">{isAr ? 'المبالغ المفتورة المصروفة حتى تاريخه' : 'Till Date Invoiced Amount'}</label>
-                  <input type="number" value={subInvAmt || ''} onChange={e => handleSubInvAmtChange(Number(e.target.value))} className="w-full p-2 border rounded-lg bg-white text-slate-800" />
-                </div>
-
-                 <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase">{isAr ? 'حزمة العمل (WBS)' : 'WBS Work Package'}</label>
-                  <select value={selectedWbsId} onChange={e => setSelectedWbsId(e.target.value)} className="w-full p-2 border rounded-lg bg-white text-slate-800">
-                    <option value="">{isAr ? '-- اختر حزمة العمل --' : '-- Select WBS Package --'}</option>
-                    {wbsPackages.map(w => (
-                      <option key={w.id} value={w.id}>{w.code} - {isAr && w.nameAr ? w.nameAr : w.nameEn}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase">{isAr ? 'نسبة الإنجاز المالي الفعلي (%)' : 'Completion Percentage'}</label>
-                  <input type="number" min={0} max={100} value={subCompPct || ''} onChange={e => handleSubCompPctChange(Number(e.target.value))} className="w-full p-2 border rounded-lg bg-white text-slate-800" />
-                </div>
-
-                <div className="space-y-1 md:col-span-2">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase">{isAr ? 'ملاحظات وتفاصيل الأعمال والضمانات البنكية' : 'Remarks'}</label>
-                  <textarea rows={2} value={subRemarks} onChange={e => setSubRemarks(e.target.value)} className="w-full p-2 border rounded-lg bg-white text-slate-800" />
-                </div>
-
-                <div className="md:col-span-2 flex justify-end gap-2 pt-2">
-                  <button type="button" onClick={() => setShowForm(false)} className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 rounded-lg font-bold">Cancel</button>
-                  <button type="submit" className="px-4 py-1.5 bg-brand-red text-white hover:bg-brand-red-dark rounded-lg font-bold">Assign Packages</button>
-                </div>
-              </form>
-            ) : null}
-
-            {/* Subcontracts list */}
-            {subcontracts.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {subcontracts.map(sub => {
-                  const ctr = masterContractors.find(c => c.id === sub.contractorId);
-                  const scope = masterScopes.find(s => s.id === sub.scopeId);
-                  const isExpanded = expandedRecordId === sub.id;
-                  const isFocused = focusedRecordId === sub.id;
-                  const linkedWbs = wbsPackages.find(w => w.id === sub.wbsId);
-
-                  return (
-                    <div 
-                      key={sub.id} 
-                      className={`bg-slate-50 dark:bg-slate-950/20 border p-5 rounded-2xl flex flex-col justify-between hover:shadow-sm transition-all text-xs space-y-4
-                        ${isFocused ? 'ring-2 ring-amber-500 border-amber-500 bg-amber-500/5' : 'border-slate-100 dark:border-slate-850'}
-                      `}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono text-[9px] text-slate-500 bg-white dark:bg-slate-900 border px-2 py-0.5 rounded font-bold">{sub.subcontractNumber}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50 text-[10px] font-bold rounded-full font-sans uppercase">
-                            Progress {sub.completionPercentage}%
-                          </span>
-                          <button
-                            onClick={() => {
-                              setExpandedRecordId(isExpanded ? null : sub.id);
-                              if (isFocused) setFocusedRecordId(null);
-                            }}
-                            className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-slate-500"
-                            title="Toggle details"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-
-                      {linkedWbs && (
-                        <div className="flex items-center gap-1.5 text-[10px] bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded-lg text-slate-500 dark:text-slate-400 font-mono max-w-max">
-                          <Folder className="w-3.5 h-3.5 text-brand-red" />
-                          <span className="font-bold">{linkedWbs.code}</span>
-                          <span>-</span>
-                          <span className="truncate max-w-[150px]">{isAr && linkedWbs.nameAr ? linkedWbs.nameAr : linkedWbs.nameEn}</span>
-                        </div>
-                      )}
-
-                      <div className="space-y-1 bg-white dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-850">
-                        <h4 className="font-extrabold text-xs text-slate-800 dark:text-slate-100">
-                          {ctr ? (isAr && ctr.companyNameAr ? ctr.companyNameAr : ctr.companyName) : 'Unknown Contractor'}
-                        </h4>
-                        <p className="text-[10px] font-bold text-brand-red font-mono uppercase tracking-wider">
-                          Package Scope: {scope ? (isAr && scope.nameAr ? scope.nameAr : scope.name) : 'Unassigned'}
-                        </p>
-                      </div>
-
-                      {sub.remarks && (
-                        <p className="text-[11px] text-slate-500 bg-slate-100/50 dark:bg-slate-900/50 p-2 rounded-xl leading-relaxed">
-                          {sub.remarks}
-                        </p>
-                      )}
-
-                      <div className="grid grid-cols-2 gap-4 text-xs font-mono pt-1">
-                        <div>
-                          <span className="text-[10px] text-slate-400 font-sans block">{isAr ? 'قيمة العقد من الباطن' : 'Package Amount'}</span>
-                          <p className="font-bold text-slate-800 dark:text-slate-200">{formatMoney(sub.totalSubcontractAmount, project.currency)}</p>
-                        </div>
-                        <div>
-                          <span className="text-[10px] text-slate-400 font-sans block">{isAr ? 'المصروف الفعلي لغاية اليوم' : 'Total Invoiced'}</span>
-                          <p className="font-bold text-slate-800 dark:text-slate-200">{formatMoney(sub.tillDateInvoicedAmount, project.currency)}</p>
-                        </div>
-                      </div>
-
-                      {/* Expandable Contextual Attachment manager */}
-                      {isExpanded && (
-                        <div className="pt-4 border-t border-slate-150 dark:border-slate-850 space-y-3">
-                          <h5 className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">
-                            {isAr ? 'مرفقات عقد الباطن المرتبطة' : 'Contextual Attachments'}
-                          </h5>
-                          <ContextualAttachmentsList
-                            projectId={project.id}
-                            entityType="Subcontract"
-                            entityId={sub.id}
-                            lang={lang}
-                            onRefresh={reloadAllProjectData}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center text-slate-400 py-10 text-xs">
-                {isAr ? 'لا توجد عقود باطن مسندة حالياً لهذا المشروع.' : 'No subcontracts assigned yet.'}
-              </div>
-            )}
-          </div>
+          <SubcontractorsPanel
+            project={project}
+            lang={lang}
+            subcontracts={subcontracts}
+            wbsPackages={wbsPackages}
+            reloadAllProjectData={reloadAllProjectData}
+            expandedRecordId={expandedRecordId}
+            setExpandedRecordId={setExpandedRecordId}
+            focusedRecordId={focusedRecordId}
+            setFocusedRecordId={setFocusedRecordId}
+          />
         )}
 
         {/* DOCUMENTS TAB */}
         {activeTab === 'documents' && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest font-mono">
-                {isAr ? 'سجل مراقبة وثائق ومستندات المشروع (Doc Control)' : 'Project Technical & Commercial Document Register'}
-              </h3>
-              {!showForm && (
-                <button
-                  onClick={() => setShowForm(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-red text-white hover:bg-brand-red-dark rounded-lg text-[10px] font-bold transition-all cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>{isAr ? 'تسجيل مستند جديد' : 'New Document'}</span>
-                </button>
-              )}
-            </div>
-
-            {showForm ? (
-              /* Specialized Document Form */
-              <form onSubmit={handleCreateDocument} className="bg-slate-50 dark:bg-slate-950/40 p-5 rounded-2xl border border-slate-100 dark:border-slate-850 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                <div className="md:col-span-3 font-bold border-b pb-1 text-slate-600 dark:text-slate-300">
-                  {isAr ? 'استمارة تدوين مخطط هندسي أو مراسلة رسمية صادر/وارد' : 'Specialized Document Control Entry Form'}
-                </div>
-                
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase">{isAr ? 'كود الترميز الفني (مطلوب)' : 'Document Code'}</label>
-                  <input required type="text" value={docCode} onChange={e => setDocCode(e.target.value)} placeholder="e.g. ROWAD-NEOM-CIV-DRW-045" className="w-full p-2 border rounded-lg bg-white text-slate-800" />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase">{isAr ? 'تصنيف المراسلة' : 'Category'}</label>
-                  <select value={docCat} onChange={e => setDocCat(e.target.value as any)} className="w-full p-2 border rounded-lg bg-white text-slate-800">
-                    <option value="Drawing">Drawing (مخطط هندسي)</option>
-                    <option value="Transmittal">Transmittal (محضر إرسال)</option>
-                    <option value="Incoming">Incoming (بريد خطاب وارد)</option>
-                    <option value="Outgoing">Outgoing (بريد خطاب صادر)</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase">{isAr ? 'نوع الوثيقة الرئيسي' : 'Document Type'}</label>
-                  <select value={docTypeId} onChange={e => setDocTypeId(e.target.value)} className="w-full p-2 border rounded-lg bg-white text-slate-800">
-                    <option value="">-- Choose Type --</option>
-                    {masterDocTypes.map(dt => (
-                      <option key={dt.id} value={dt.id}>{isAr && dt.nameAr ? dt.nameAr : dt.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-1 md:col-span-2">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase">{isAr ? 'العنوان بالإنجليزية (مطلوب)' : 'Document Title (EN)'}</label>
-                  <input required type="text" value={docTitleEn} onChange={e => setDocTitleEn(e.target.value)} placeholder="e.g. Soil reports under main tank area" className="w-full p-2 border rounded-lg bg-white text-slate-800" />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase">{isAr ? 'العنوان بالعربية (اختياري)' : 'Document Title (AR)'}</label>
-                  <input type="text" value={docTitleAr} onChange={e => setDocTitleAr(e.target.value)} placeholder="مثال: تقارير اختبارات التربة" className="w-full p-2 border rounded-lg bg-white text-slate-800" />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase">{isAr ? 'الجهة المرسلة' : 'Sender'}</label>
-                  <input required type="text" value={docSender} onChange={e => setDocSender(e.target.value)} className="w-full p-2 border rounded-lg bg-white text-slate-800" />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase">{isAr ? 'الجهة المستلمة' : 'Recipient'}</label>
-                  <input required type="text" value={docRecip} onChange={e => setDocRecip(e.target.value)} className="w-full p-2 border rounded-lg bg-white text-slate-800" />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase">{isAr ? 'تاريخ التلقي/الإرسال' : 'Date Received'}</label>
-                  <input type="date" value={docDate} onChange={e => setDocDate(e.target.value)} className="w-full p-2 border rounded-lg bg-white text-slate-800" />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase">{isAr ? 'حالة الاعتماد' : 'Status'}</label>
-                  <input type="text" value={docStatus} onChange={e => setDocStatus(e.target.value)} placeholder="Approved, Under Audit" className="w-full p-2 border rounded-lg bg-white text-slate-800" />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase">{isAr ? 'مستوى الأهمية' : 'Priority'}</label>
-                  <select value={docPriority} onChange={e => setDocPriority(e.target.value as any)} className="w-full p-2 border rounded-lg bg-white text-slate-800">
-                    <option value="High">High Priority</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Low">Low</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase">{isAr ? 'حزمة العمل (WBS)' : 'WBS Work Package'}</label>
-                  <select value={selectedWbsId} onChange={e => setSelectedWbsId(e.target.value)} className="w-full p-2 border rounded-lg bg-white text-slate-800">
-                    <option value="">{isAr ? '-- اختر حزمة العمل --' : '-- Select WBS Package --'}</option>
-                    {wbsPackages.map(w => (
-                      <option key={w.id} value={w.id}>{w.code} - {isAr && w.nameAr ? w.nameAr : w.nameEn}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase">{isAr ? 'رقم الإصدار' : 'Revision Version'}</label>
-                  <input type="text" value={docVer} onChange={e => setDocVer(e.target.value)} className="w-full p-2 border rounded-lg bg-white text-slate-800" />
-                </div>
-
-                <div className="md:col-span-3 flex justify-end gap-2 pt-2">
-                  <button type="button" onClick={() => setShowForm(false)} className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 rounded-lg font-bold">Cancel</button>
-                  <button type="submit" className="px-4 py-1.5 bg-brand-red text-white hover:bg-brand-red-dark rounded-lg font-bold">Register Document</button>
-                </div>
-              </form>
-            ) : null}
-
-            {/* Documents List */}
-            {documents.length > 0 ? (
-              <div className="space-y-3.5">
-                {documents.map(doc => {
-                  const isExpanded = expandedRecordId === doc.id;
-                  const isFocused = focusedRecordId === doc.id;
-                  const linkedWbs = wbsPackages.find(w => w.id === doc.wbsId);
-
-                  return (
-                    <div 
-                      key={doc.id} 
-                      className={`bg-slate-50 dark:bg-slate-950/20 border p-4.5 rounded-2xl flex flex-col gap-4 hover:shadow-sm transition-all text-xs
-                        ${isFocused ? 'ring-2 ring-amber-500 border-amber-500 bg-amber-500/5' : 'border-slate-100 dark:border-slate-850'}
-                      `}
-                    >
-                      <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
-                        <div className="space-y-1.5 flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-mono text-[9px] text-slate-500 bg-white dark:bg-slate-900 border px-2 py-0.5 rounded font-bold">{doc.code}</span>
-                            <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-[9px] font-bold text-slate-500 font-mono">{doc.category}</span>
-                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
-                              doc.priority === 'High' ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-slate-50 text-slate-400'
-                            }`}>
-                              {doc.priority}
-                            </span>
-                          </div>
-                          <h4 className="font-extrabold text-slate-850 dark:text-slate-100">
-                            {isAr && doc.titleAr ? doc.titleAr : doc.titleEn}
-                          </h4>
-                          <p className="text-[10px] text-slate-400 font-medium">
-                            From: <span className="font-bold text-slate-500">{doc.sender}</span> | To: <span className="font-bold text-slate-500">{doc.recipient}</span>
-                          </p>
-
-                          {linkedWbs && (
-                            <div className="flex items-center gap-1.5 text-[10px] bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded-lg text-slate-500 dark:text-slate-400 font-mono max-w-max mt-1">
-                              <Folder className="w-3.5 h-3.5 text-brand-red" />
-                              <span className="font-bold">{linkedWbs.code}</span>
-                              <span>-</span>
-                              <span className="truncate max-w-[150px]">{isAr && linkedWbs.nameAr ? linkedWbs.nameAr : linkedWbs.nameEn}</span>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-4 shrink-0 font-mono text-[10px] text-slate-400 font-bold self-end md:self-center">
-                          <div>
-                            <span className="text-[9px] font-sans text-slate-400 block">{isAr ? 'الإصدار' : 'Version'}</span>
-                            <p className="text-slate-800 dark:text-slate-200 mt-0.5">{doc.version}</p>
-                          </div>
-                          <div>
-                            <span className="text-[9px] font-sans text-slate-400 block">{isAr ? 'تاريخ التلقي' : 'Date'}</span>
-                            <p className="text-slate-800 dark:text-slate-200 mt-0.5">{doc.dateReceived}</p>
-                          </div>
-                          <button
-                            onClick={() => {
-                              setExpandedRecordId(isExpanded ? null : doc.id);
-                              if (isFocused) setFocusedRecordId(null);
-                            }}
-                            className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-slate-500"
-                            title="Toggle details"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Expandable Contextual Attachment manager */}
-                      {isExpanded && (
-                        <div className="pt-4 border-t border-slate-150 dark:border-slate-850 space-y-3">
-                          <h5 className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">
-                            {isAr ? 'مرفقات الوثيقة المرتبطة' : 'Contextual Attachments'}
-                          </h5>
-                          <ContextualAttachmentsList
-                            projectId={project.id}
-                            entityType="Document"
-                            entityId={doc.id}
-                            lang={lang}
-                            onRefresh={reloadAllProjectData}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center text-slate-400 py-10 text-xs">
-                {isAr ? 'لا توجد مستندات مسجلة لهذا المشروع.' : 'No documents registered yet.'}
-              </div>
-            )}
-          </div>
+          <DocumentsPanel
+            project={project}
+            lang={lang}
+            documents={documents}
+            wbsPackages={wbsPackages}
+            reloadAllProjectData={reloadAllProjectData}
+            expandedRecordId={expandedRecordId}
+            setExpandedRecordId={setExpandedRecordId}
+            focusedRecordId={focusedRecordId}
+            setFocusedRecordId={setFocusedRecordId}
+          />
         )}
 
         {/* ATTACHMENTS TAB */}
         {activeTab === 'attachments' && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest font-mono">
-              {isAr ? 'مستودع المرفقات والملفات التعاقدية الداعم للمشروع' : 'Project Attachments & Contractual PDF Vault'}
-            </h3>
-
-            {/* Drag and drop interactive mockup panel */}
-            <div 
-              onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
-              onDragLeave={() => setIsDragging(false)}
-              onDrop={e => { e.preventDefault(); setIsDragging(false); handleMockUpload(); }}
-              className={`border-2 border-dashed rounded-[32px] p-12 text-center transition-all cursor-pointer flex flex-col items-center justify-center space-y-4 ${
-                isDragging 
-                  ? 'border-brand-red bg-brand-red/5 text-brand-red' 
-                  : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-950/20'
-              }`}
-              onClick={handleMockUpload}
-            >
-              <Paperclip className="w-12 h-12 text-slate-300 mx-auto" />
-              <div className="space-y-1">
-                <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  {isAr 
-                    ? 'اسحب وأفلت الملفات هنا أو اضغط لتحديد ملف من جهازك' 
-                    : 'Drag & drop contract papers, PDF drawings, or excel sheets, or click to upload'
-                  }
-                </p>
-                <p className="text-[10px] text-slate-400">Supports PDF, DWG, XLSX, DOCX up to 50MB</p>
-              </div>
-            </div>
-
-            {/* Attachments list */}
-            {attachments.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
-                {attachments.map(att => (
-                  <div key={att.id} className="p-4 bg-slate-50 dark:bg-slate-950/20 border border-slate-100 dark:border-slate-850 rounded-2xl flex items-center justify-between hover:shadow-sm transition-all">
-                    <div className="min-w-0 flex-1 flex items-center gap-3">
-                      <div className="w-9 h-9 bg-brand-red/5 text-brand-red rounded-lg flex items-center justify-center shrink-0">
-                        <FileText className="w-5 h-5" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-extrabold text-slate-800 dark:text-slate-200 truncate pr-2" title={att.fileName}>{att.fileName}</p>
-                        <p className="text-[9px] text-slate-400 mt-0.5">{att.fileSize} | Uploaded: {att.uploadedDate}</p>
-                      </div>
-                    </div>
-
-                    <button 
-                      onClick={() => alert('Downloading file is in process...')}
-                      className="p-2 border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900 hover:bg-slate-50 text-slate-500 rounded-lg shrink-0 cursor-pointer"
-                    >
-                      <Download className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-          </div>
+          <AttachmentsPanel
+            project={project}
+            lang={lang}
+            attachments={attachments}
+            reloadAllProjectData={reloadAllProjectData}
+          />
         )}
 
         {/* GLOBAL SEARCH TAB */}
