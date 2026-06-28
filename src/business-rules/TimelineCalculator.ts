@@ -1,7 +1,6 @@
 import { BusinessCalendar } from '../domain/administration/Settings';
 import { TimelineRules } from '../domain/administration/TimelineRules';
 import { CalculatedTimeline } from '../domain/pre-award/TimelineInformation';
-import { Clock } from '../services/Clock';
 
 export class TimelineCalculator {
   /**
@@ -29,7 +28,7 @@ export class TimelineCalculator {
    * Safely offsets a starting date string by a specific number of working/calendar days.
    */
   public static addDays(dateStr: string, days: number, calendar?: BusinessCalendar): string {
-    const date = Clock.parse(dateStr);
+    const date = new Date(dateStr);
     if (isNaN(date.getTime())) {
       return dateStr;
     }

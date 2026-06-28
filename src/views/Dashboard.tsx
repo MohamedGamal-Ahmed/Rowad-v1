@@ -11,7 +11,7 @@ import {
 } from 'recharts';
 import { BiText } from '../components/BiText';
 import { Tender } from './OngoingTenders';
-import { ExecutionRecord } from './ProjectExecution';
+import { ExecutionRecord } from '../seed/mockData';
 import { DocumentRecord } from './DocumentControl';
 import { FinancialsCalculator } from '../business-rules/FinancialsCalculator';
 import { DashboardService } from '../services/DashboardService';
@@ -90,6 +90,26 @@ export function Dashboard({ lang, list, executionRecords, documentRecords }: Das
     healthyItemsCount,
     healthyRatio
   } = dashboardService.computeFromLegacyData(list, executionRecords);
+
+  // Aggregated status statistics for ongoing tenders
+  const statusGrouping = list.reduce((acc, curr) => {
+    const statusEn = curr.projectStatus?.en || 'Under Study';
+    const statusAr = curr.projectStatus?.ar || 'تحت الدراسة والتقدير';
+    const val = parseAED(curr.estimatedValue);
+    
+    if (!acc[statusEn]) {
+      acc[statusEn] = {
+        label: { en: statusEn, ar: statusAr },
+        count: 0,
+        value: 0
+      };
+    }
+    acc[statusEn].count += 1;
+    acc[statusEn].value += val;
+    return acc;
+  }, {} as Record<string, { label: { en: string; ar: string }; count: number; value: number }>);
+
+  const statusGroupingList = Object.values(statusGrouping);
 
   // Let's build KPI structures
   const executiveKPIs = [
@@ -563,141 +583,198 @@ export function Dashboard({ lang, list, executionRecords, documentRecords }: Das
       )}
 
       {(activeTab === 'all' || activeTab === 'operations') && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Section for Checklist Readiness (7 cols) */}
-          <div className="lg:col-span-7 bg-white border border-gray-100 shadow-sm rounded-[32px] p-6 space-y-4 flex flex-col justify-between">
-            <div>
-              <div className="flex justify-between items-start border-b border-gray-50 pb-3">
-                <div>
-                  <span className="text-[11px] uppercase font-black text-brand-navy tracking-wider">
-                    {isAr ? "جاهزية واستيفاء كراسات الشروط (RFP Checklist)" : "PRE-AWARD STUDY & RFP READY CHECKLISTS"}
-                  </span>
-                  <h3 className="text-lg md:text-xl font-black text-brand-navy tracking-tight mt-0.5">
-                    {isAr ? "معدلات اكتمال دراسة مستندات المناقصات" : "Tender Proposal Checklist Integrity"}
-                  </h3>
-                  <p className="text-xs text-gray-400 mt-0.5 font-medium">
-                    {isAr 
-                      ? "مستوى التحقق الفني والمالي من الكراسات والمخططات والجداول لكل مناقصة جارية." 
-                      : "Completion rate of critical RFP sections, spec reviews, and BOQs across bidding pipeline."}
-                  </p>
-                </div>
-                <span className="p-2 bg-indigo-50 text-brand-navy rounded-xl">
-                  <CheckSquare className="w-5 h-5" />
+        <div className="space-y-6">
+          {/* ONGOING TENDERS PIPELINE BREAKDOWN CARD */}
+          <div className="bg-white border border-gray-100 shadow-sm rounded-[32px] p-6 space-y-4">
+            <div className="flex justify-between items-start border-b border-gray-50 pb-3 flex-wrap gap-2">
+              <div>
+                <span className="text-[11px] uppercase font-black text-indigo-600 tracking-wider">
+                  {isAr ? "مراحل وجاهزية المناقصات الجارية" : "ONGOING TENDER PIPELINE FLOW"}
                 </span>
+                <h3 className="text-lg md:text-xl font-black text-brand-navy tracking-tight mt-0.5">
+                  {isAr ? "توزيع المناقصات حسب مرحلة الدراسة والتقدير" : "Bidding Pipeline Lifecycle & Value Distribution"}
+                </h3>
+                <p className="text-xs text-gray-400 mt-0.5 font-medium">
+                  {isAr 
+                    ? "إحصائيات فورية للمناقصات الجارية مجمعة حسب الحالة الفنية والمالية وقيمتها التقديرية التراكمية." 
+                    : "Live aggregation of pre-award bidding sheets grouped by study state and estimated capital volume."}
+                </p>
               </div>
-
-              <div className="mt-4 space-y-4">
-                {list.filter(t => t.recordStatus === 'Active').map(t => {
-                  const { listCheck, drawingsCheck, boqCheck, specsCheck, score } = getChecks(t);
-                  return (
-                    <div key={t.id} className="p-3.5 bg-gray-50/50 hover:bg-gray-50 border border-gray-150/60 rounded-2xl transition-all space-y-2.5">
-                      <div className="flex justify-between items-center text-xs">
-                        <div>
-                          <h4 className="font-extrabold text-brand-navy">{isAr ? t.projectName.ar : t.projectName.en}</h4>
-                          <p className="text-[10px] text-gray-400 font-bold">{t.projectCode} • {isAr ? t.location.ar : t.location.en}</p>
-                        </div>
-                        <span className={`px-2.5 py-0.5 text-[11px] font-black rounded-lg ${
-                          score === 100 ? 'bg-emerald-100 text-emerald-800' : 'bg-brand-navy/5 text-brand-navy'
-                        }`}>
-                          {score}% {isAr ? 'جاهزة' : 'Ready'}
-                        </span>
-                      </div>
-
-                      {/* Progress Bar */}
-                      <div className="w-full bg-gray-100 rounded-full h-2">
-                        <div 
-                          className={`h-2 rounded-full transition-all duration-500 ${score === 100 ? 'bg-emerald-500' : 'bg-brand-navy'}`} 
-                          style={{ width: `${score}%` }} 
-                        />
-                      </div>
-
-                      {/* Mini checklists visualization inline */}
-                      <div className="grid grid-cols-4 gap-2 text-[10px] sm:text-[11px] font-extrabold text-center pt-0.5">
-                        {[
-                          { label: isAr ? 'الكراسة' : 'RFP Document', ok: listCheck },
-                          { label: isAr ? 'المخططات' : 'Drawings', ok: drawingsCheck },
-                          { label: isAr ? 'الكميات (BOQ)' : 'BOQ Spread', ok: boqCheck },
-                          { label: isAr ? 'المواصفات' : 'Specs Specs', ok: specsCheck }
-                        ].map((chk, idx) => (
-                          <div key={idx} className={`p-1 rounded-lg border flex items-center justify-center gap-1 leading-none ${
-                            chk.ok 
-                              ? 'bg-emerald-50/40 border-emerald-100 text-emerald-700' 
-                              : 'bg-white border-gray-200 text-gray-400 font-medium'
-                          }`}>
-                            {chk.ok && <span className="text-emerald-500 font-bold">✓</span>}
-                            <span>{chk.label}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              <span className="p-2.5 bg-indigo-50 text-indigo-700 rounded-xl">
+                <Briefcase className="w-5 h-5" />
+              </span>
             </div>
 
-            <div className="text-[10px] text-gray-400 font-bold uppercase border-t border-gray-50 pt-3">
-              {isAr ? "يتم تحديث الفحص الإداري مباشرة من صفحة المناقصات المخصصة" : "Checklist verification is synced live from Tender study engine"}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
+              {statusGroupingList.map((group, idx) => {
+                const colors = [
+                  { bg: 'bg-indigo-50/50', border: 'border-indigo-100/60', text: 'text-indigo-800', badge: 'bg-indigo-100 text-indigo-800' },
+                  { bg: 'bg-amber-50/50', border: 'border-amber-100/60', text: 'text-amber-800', badge: 'bg-amber-100 text-amber-800' },
+                  { bg: 'bg-emerald-50/50', border: 'border-emerald-100/60', text: 'text-emerald-800', badge: 'bg-emerald-100 text-emerald-800' },
+                  { bg: 'bg-rose-50/50', border: 'border-rose-100/60', text: 'text-rose-800', badge: 'bg-rose-100 text-rose-800' },
+                ];
+                const c = colors[idx % colors.length];
+
+                return (
+                  <div key={idx} className={`p-4 rounded-2xl border ${c.bg} ${c.border} flex flex-col justify-between space-y-3 hover:shadow-xs transition-all`}>
+                    <div className="flex justify-between items-start gap-2">
+                      <span className="text-xs font-black text-brand-navy line-clamp-1">
+                        {isAr ? group.label.ar : group.label.en}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-black shrink-0 ${c.badge}`}>
+                        {group.count} {isAr ? 'مناقصات' : 'bids'}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-lg font-black text-brand-navy font-mono">
+                        {formatCurrency(group.value)}
+                      </p>
+                      <p className="text-[10px] text-gray-400 font-semibold mt-0.5">
+                        {isAr ? "إجمالي القيمة التقديرية" : "Total Estimated Value"}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          {/* Section for Site Visits (5 cols) */}
-          <div className="lg:col-span-5 bg-white border border-gray-100 shadow-sm rounded-[32px] p-6 space-y-4 flex flex-col justify-between">
-            <div>
-              <div className="flex justify-between items-start border-b border-gray-50 pb-3">
-                <div>
-                  <span className="text-[11px] uppercase font-black text-brand-red tracking-wider">
-                    {isAr ? "معاينة مواقع المشاريع (Tender Site Visits)" : "PRE-AWARD SITE INSPECTIONS"}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Section for Checklist Readiness (7 cols) */}
+            <div className="lg:col-span-7 bg-white border border-gray-100 shadow-sm rounded-[32px] p-6 space-y-4 flex flex-col justify-between">
+              <div>
+                <div className="flex justify-between items-start border-b border-gray-50 pb-3">
+                  <div>
+                    <span className="text-[11px] uppercase font-black text-brand-navy tracking-wider">
+                      {isAr ? "جاهزية واستيفاء كراسات الشروط (RFP Checklist)" : "PRE-AWARD STUDY & RFP READY CHECKLISTS"}
+                    </span>
+                    <h3 className="text-lg md:text-xl font-black text-brand-navy tracking-tight mt-0.5">
+                      {isAr ? "معدلات اكتمال دراسة مستندات المناقصات" : "Tender Proposal Checklist Integrity"}
+                    </h3>
+                    <p className="text-xs text-gray-400 mt-0.5 font-medium">
+                      {isAr 
+                        ? "مستوى التحقق الفني والمالي من الكراسات والمخططات والجداول لكل مناقصة جارية." 
+                        : "Completion rate of critical RFP sections, spec reviews, and BOQs across bidding pipeline."}
+                    </p>
+                  </div>
+                  <span className="p-2 bg-indigo-50 text-brand-navy rounded-xl">
+                    <CheckSquare className="w-5 h-5" />
                   </span>
-                  <h3 className="text-lg md:text-xl font-black text-brand-navy tracking-tight mt-0.5">
-                    {isAr ? "الزيارات الميدانية والإحداثية" : "Bidding Surveying Calendar"}
-                  </h3>
-                  <p className="text-xs text-gray-400 mt-0.5 font-medium">
-                    {isAr 
-                      ? "تنظيم ومراقبة جولات المعاينة الهندسية وتخريج تقرير المعاينة للمناقصة." 
-                      : "Vital Pre-award field investigations prior to commercial submittal signoffs."}
-                  </p>
                 </div>
-                <span className="p-2 bg-rose-50 text-brand-red rounded-xl">
-                  <Calendar className="w-5 h-5 animate-pulse" />
-                </span>
-              </div>
 
-              <div className="mt-4 space-y-3">
-                {list.filter(t => t.recordStatus === 'Active').map(t => {
-                  const { req, date } = getSiteVisit(t);
-                  if (!req) return null;
-                  const { day, month } = getCalendarParts(date);
-                  return (
-                    <div key={t.id} className="p-3 bg-gray-50/50 hover:bg-gray-50 border border-gray-200 rounded-2xl flex items-center justify-between gap-3 text-xs transition-colors">
-                      <div className="flex items-center gap-3">
-                        {/* Calendar Tear Sheet layout */}
-                        <div className="bg-white border border-gray-200 shadow-xs rounded-xl flex flex-col items-center justify-center shrink-0 w-13 h-13 overflow-hidden text-center">
-                          <div className="bg-brand-red text-white text-[9px] font-black uppercase py-0.5 w-full">
-                            {month}
+                <div className="mt-4 space-y-4">
+                  {list.filter(t => t.recordStatus === 'Active').map(t => {
+                    const { listCheck, drawingsCheck, boqCheck, specsCheck, score } = getChecks(t);
+                    return (
+                      <div key={t.id} className="p-3.5 bg-gray-50/50 hover:bg-gray-50 border border-gray-150/60 rounded-2xl transition-all space-y-2.5">
+                        <div className="flex justify-between items-center text-xs">
+                          <div>
+                            <h4 className="font-extrabold text-brand-navy">{isAr ? t.projectName.ar : t.projectName.en}</h4>
+                            <p className="text-[10px] text-gray-400 font-bold">{t.projectCode} • {isAr ? t.location.ar : t.location.en}</p>
                           </div>
-                          <div className="text-[16px] font-black text-brand-navy leading-tight py-0.5">
-                            {day}
-                          </div>
+                          <span className={`px-2.5 py-0.5 text-[11px] font-black rounded-lg ${
+                            score === 100 ? 'bg-emerald-100 text-emerald-800' : 'bg-brand-navy/5 text-brand-navy'
+                          }`}>
+                            {score}% {isAr ? 'جاهزة' : 'Ready'}
+                          </span>
                         </div>
-                        
-                        <div>
-                          <h4 className="font-extrabold text-brand-navy line-clamp-1">{isAr ? t.projectName.ar : t.projectName.en}</h4>
-                          <p className="text-[10px] text-gray-500 font-semibold">{isAr ? "المسؤول:" : "Coordinator:"} <span className="text-brand-navy">{isAr ? t.coordinator.ar : t.coordinator.en}</span></p>
-                          <p className="text-[9px] text-gray-400 font-bold">{isAr ? "الموقع الجغرافي:" : "Location:"} {isAr ? t.location.ar : t.location.en}</p>
+
+                        {/* Progress Bar */}
+                        <div className="w-full bg-gray-100 rounded-full h-2">
+                          <div 
+                            className={`h-2 rounded-full transition-all duration-500 ${score === 100 ? 'bg-emerald-500' : 'bg-brand-navy'}`} 
+                            style={{ width: `${score}%` }} 
+                          />
+                        </div>
+
+                        {/* Mini checklists visualization inline */}
+                        <div className="grid grid-cols-4 gap-2 text-[10px] sm:text-[11px] font-extrabold text-center pt-0.5">
+                          {[
+                            { label: isAr ? 'الكراسة' : 'RFP Document', ok: listCheck },
+                            { label: isAr ? 'المخططات' : 'Drawings', ok: drawingsCheck },
+                            { label: isAr ? 'الكميات (BOQ)' : 'BOQ Spread', ok: boqCheck },
+                            { label: isAr ? 'المواصفات' : 'Specs Specs', ok: specsCheck }
+                          ].map((chk, idx) => (
+                            <div key={idx} className={`p-1 rounded-lg border flex items-center justify-center gap-1 leading-none ${
+                              chk.ok 
+                                ? 'bg-emerald-50/40 border-emerald-100 text-emerald-700' 
+                                : 'bg-white border-gray-200 text-gray-400 font-medium'
+                            }`}>
+                              {chk.ok && <span className="text-emerald-500 font-bold">✓</span>}
+                              <span>{chk.label}</span>
+                            </div>
+                          ))}
                         </div>
                       </div>
+                    );
+                  })}
+                </div>
+              </div>
 
-                      <span className="px-2 py-0.5 bg-amber-50 text-amber-800 border border-amber-200/40 font-bold text-[10px] rounded-lg shrink-0">
-                        {isAr ? 'موعد زيارة' : 'Site Visit'}
-                      </span>
-                    </div>
-                  );
-                })}
+              <div className="text-[10px] text-gray-400 font-bold uppercase border-t border-gray-50 pt-3">
+                {isAr ? "يتم تحديث الفحص الإداري مباشرة من صفحة المناقصات المخصصة" : "Checklist verification is synced live from Tender study engine"}
               </div>
             </div>
 
-            <div className="text-[10px] text-gray-400 font-bold uppercase border-t border-gray-50 pt-2.5">
-              {isAr ? "مطلوبة بشكل إلزامي لتقدير كلفة الهياكل الخاصة وأعمال التربة" : "Mandatory for complex geotechnical and site logistics costings"}
+            {/* Section for Site Visits (5 cols) */}
+            <div className="lg:col-span-5 bg-white border border-gray-100 shadow-sm rounded-[32px] p-6 space-y-4 flex flex-col justify-between">
+              <div>
+                <div className="flex justify-between items-start border-b border-gray-50 pb-3">
+                  <div>
+                    <span className="text-[11px] uppercase font-black text-brand-red tracking-wider">
+                      {isAr ? "معاينة مواقع المشاريع (Tender Site Visits)" : "PRE-AWARD SITE INSPECTIONS"}
+                    </span>
+                    <h3 className="text-lg md:text-xl font-black text-brand-navy tracking-tight mt-0.5">
+                      {isAr ? "الزيارات الميدانية والإحداثية" : "Bidding Surveying Calendar"}
+                    </h3>
+                    <p className="text-xs text-gray-400 mt-0.5 font-medium">
+                      {isAr 
+                        ? "تنظيم ومراقبة جولات المعاينة الهندسية وتخريج تقرير المعاينة للمناقصة." 
+                        : "Vital Pre-award field investigations prior to commercial submittal signoffs."}
+                    </p>
+                  </div>
+                  <span className="p-2 bg-rose-50 text-brand-red rounded-xl">
+                    <Calendar className="w-5 h-5 animate-pulse" />
+                  </span>
+                </div>
+
+                <div className="mt-4 space-y-3">
+                  {list.filter(t => t.recordStatus === 'Active').map(t => {
+                    const { req, date } = getSiteVisit(t);
+                    if (!req) return null;
+                    const { day, month } = getCalendarParts(date);
+                    return (
+                      <div key={t.id} className="p-3 bg-gray-50/50 hover:bg-gray-50 border border-gray-200 rounded-2xl flex items-center justify-between gap-3 text-xs transition-colors">
+                        <div className="flex items-center gap-3">
+                          {/* Calendar Tear Sheet layout */}
+                          <div className="bg-white border border-gray-200 shadow-xs rounded-xl flex flex-col items-center justify-center shrink-0 w-13 h-13 overflow-hidden text-center">
+                            <div className="bg-brand-red text-white text-[9px] font-black uppercase py-0.5 w-full">
+                              {month}
+                            </div>
+                            <div className="text-[16px] font-black text-brand-navy leading-tight py-0.5">
+                              {day}
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <h4 className="font-extrabold text-brand-navy line-clamp-1">{isAr ? t.projectName.ar : t.projectName.en}</h4>
+                            <p className="text-[10px] text-gray-500 font-semibold">{isAr ? "المسؤول:" : "Coordinator:"} <span className="text-brand-navy">{isAr ? t.coordinator.ar : t.coordinator.en}</span></p>
+                            <p className="text-[9px] text-gray-400 font-bold">{isAr ? "الموقع الجغرافي:" : "Location:"} {isAr ? t.location.ar : t.location.en}</p>
+                          </div>
+                        </div>
+
+                        <span className="px-2 py-0.5 bg-amber-50 text-amber-800 border border-amber-200/40 font-bold text-[10px] rounded-lg shrink-0">
+                          {isAr ? 'موعد زيارة' : 'Site Visit'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="text-[10px] text-gray-400 font-bold uppercase border-t border-gray-50 pt-2.5">
+                {isAr ? "مطلوبة بشكل إلزامي لتقدير كلفة الهياكل الخاصة وأعمال التربة" : "Mandatory for complex geotechnical and site logistics costings"}
+              </div>
             </div>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BilingualString } from '../data';
+import { BilingualString } from '../domain/common/BilingualString';
 
 interface BiTextProps {
   text: BilingualString;

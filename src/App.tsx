@@ -2,13 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { Dashboard } from './views/Dashboard';
-import { ProjectProfile } from './views/ProjectProfile';
 import { OngoingTenders, initialTenders, Tender } from './views/OngoingTenders';
-import { ProjectExecution, ExecutionRecord, mockExecutionData } from './views/ProjectExecution';
 import { DocumentControl, DocumentRecord, mockDocuments } from './views/DocumentControl';
+import { ExecutionRecord, mockExecutionData } from './seed/mockData';
 import { SettingsView } from './views/Settings';
 import { Settings } from './domain/administration/Settings';
-import { mockProjects } from './data';
 import { TenderService } from './services/TenderService';
 import { ProjectControlsService } from './services/ProjectControlsService';
 import { ProjectControlsMapper } from './mappers/ProjectControlsMapper';
@@ -18,7 +16,6 @@ import { ProjectsPage } from './views/ProjectsPage';
 export default function App() {
   const [lang, setLang] = useState<'ar' | 'en'>('ar');
   const [currentView, setCurrentView] = useState('dashboard');
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Unified pre-award portfolio state
@@ -198,16 +195,13 @@ export default function App() {
   
   const handleNavigate = (viewId: string) => {
     setCurrentView(viewId);
-    setSelectedProjectId(null); // Reset project view when clicking sidebar
   };
-
-  const selectedProject = selectedProjectId ? mockProjects.find(p => p.id === selectedProjectId) : null;
 
   return (
     <div className="flex min-h-screen bg-brand-gray w-full font-sans text-brand-navy selection:bg-brand-red/20 overflow-hidden">
       {/* Sidebar */}
       <Sidebar 
-        currentView={selectedProjectId ? 'projects' : currentView} 
+        currentView={currentView} 
         onNavigate={handleNavigate} 
         lang={lang} 
         isCollapsed={isSidebarCollapsed}
@@ -219,13 +213,7 @@ export default function App() {
         <Header lang={lang} onToggleLang={toggleLanguage} />
         
         <main className="flex-1 overflow-y-auto no-scrollbar relative">
-          {selectedProject ? (
-            <ProjectProfile 
-              lang={lang} 
-              project={selectedProject} 
-              onBack={() => setSelectedProjectId(null)} 
-            />
-          ) : currentView === 'dashboard' ? (
+          {currentView === 'dashboard' ? (
             <Dashboard 
               lang={lang} 
               list={tendersList}
