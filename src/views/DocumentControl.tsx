@@ -9,75 +9,10 @@ import { BiText } from '../components/BiText';
 import { Settings } from '../domain/administration/Settings';
 import { NumberingService } from '../services/NumberingService';
 import { Clock as AppClock } from '../services/Clock';
+import { DocumentRecord, mockDocuments } from '../seed/mockData';
 
-export interface DocumentRecord {
-  id: string;
-  code: string;
-  title: { en: string; ar: string };
-  category: 'Incoming' | 'Outgoing' | 'Drawing' | 'Transmittal';
-  projectName: { en: string; ar: string };
-  sender: string;
-  recipient: string;
-  dateReceived: string;
-  status: { en: string; ar: string };
-  priority: 'High' | 'Medium' | 'Low';
-  version: string;
-}
-
-export const mockDocuments: DocumentRecord[] = [
-  {
-    id: 'D-001',
-    code: 'ROWAD-NEOM-CIV-DRW-042',
-    title: { en: 'Slab reinforcement details at station 3+400', ar: 'تفاصيل تسليح البلاطة الخرسانية عند المحطة ٣+٤٠٠' },
-    category: 'Drawing',
-    projectName: { en: 'Neom Spine Ground Terminal Expansion', ar: 'توسعة محطة النفق الأرضية بمشروع نيوم' },
-    sender: 'Rowad Civil Design Team',
-    recipient: 'Lead Construction Consultant',
-    dateReceived: '2026-06-19',
-    status: { en: 'Approved for Construction', ar: 'معتمد للتنفيذ' },
-    priority: 'High',
-    version: 'Rev 2.0'
-  },
-  {
-    id: 'D-002',
-    code: 'TRN-DIR-8812',
-    title: { en: 'Transmittal of Soil compaction test reports', ar: 'محضر إرسال تقارير اختبارات دك التربة' },
-    category: 'Transmittal',
-    projectName: { en: 'البنية التحتية لمنطقة بوليفارد الدرعية التاريخية', ar: 'البنية التحتية لمنطقة بوليفارد الدرعية التاريخية' },
-    sender: 'SGS Soils Laboratory LLC',
-    recipient: 'Rowad QA/QC Department',
-    dateReceived: '2026-06-20',
-    status: { en: 'Under Verification', ar: 'تحت التدقيق والمطابقة' },
-    priority: 'Medium',
-    version: 'Rev 1.0'
-  },
-  {
-    id: 'D-003',
-    code: 'INC-MUNI-0994',
-    title: { en: 'Municipality site access and load permit letter', ar: 'خطاب البلدية بشأن تصريح الدخول ومطابقة الحمولات' },
-    category: 'Incoming',
-    projectName: { en: 'Cairo Capital East Logistics Hub', ar: 'المركز اللوجستي لشرق العاصمة الإدارية' },
-    sender: 'Cairo Urban Development Authority',
-    recipient: 'Rowad Project Director',
-    dateReceived: '2026-06-14',
-    status: { en: 'Awaiting Response Letter', ar: 'بانتظار خطاب الرد والتعليق' },
-    priority: 'High',
-    version: 'Original'
-  },
-  {
-    id: 'D-004',
-    code: 'OUT-EXP-ROWG-771',
-    title: { en: 'Notice of major structural excavation clearance', ar: 'إخطار رسمي بانتهاء أعمال الحفر الهيكلي الرئيسي' },
-    category: 'Outgoing',
-    projectName: { en: 'Al Maktoum Terminal Cargo Ramp', ar: 'مدرج الشحن بمطار آل مكتوم الدولي الجديد' },
-    sender: 'Rowad HSE Manager',
-    recipient: 'General Civil Aviation Authority',
-    dateReceived: '2026-06-18',
-    status: { en: 'Delivered & Stamped', ar: 'تم التسليم والختم بالوارد' },
-    priority: 'Medium',
-    version: 'Rev 1.1'
-  }
-];
+export type { DocumentRecord };
+export { mockDocuments };
 
 export function DocumentControl({ 
   lang, 

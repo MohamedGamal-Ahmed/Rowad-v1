@@ -13,6 +13,7 @@ import { ProjectRepository } from '../../../repositories/ProjectRepository';
 import { MasterDataRepository } from '../../../repositories/MasterDataRepository';
 import { Contractor, ScopeOfWork, DocumentType } from '../../../domain/master/MasterData';
 import { BiText } from '../../../components/BiText';
+import { FinancialsCalculator } from '../../../business-rules/FinancialsCalculator';
 
 // Enterprise modular components imports
 import { ProjectDashboard } from './workspace/ProjectDashboard';
@@ -54,6 +55,26 @@ export function ProjectWorkspace({
   const isAr = lang === 'ar';
   const projectRepo = new ProjectRepository();
   const masterRepo = new MasterDataRepository();
+
+  const getFinancialSettings = () => {
+    const saved = localStorage.getItem('pmo_enterprise_settings');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.financialSettings) {
+          return parsed.financialSettings;
+        }
+      } catch (e) {}
+    }
+    return {
+      retentionPercentage: 10,
+      vatPercentage: 15,
+      bidBondPercentage: 2,
+      performanceBondPercentage: 10,
+      advancePaymentPercentage: 10,
+      defaultCurrency: 'AED'
+    };
+  };
 
   const [currentProjectId, setCurrentProjectId] = useState(projectId);
   const [allProjectsList, setAllProjectsList] = useState<Project[]>([]);
@@ -298,6 +319,14 @@ export function ProjectWorkspace({
     reloadAllProjectData();
   };
 
+  const handleIpcGrossChange = (val: number) => {
+    setIpcGross(val);
+    const finSettings = getFinancialSettings();
+    const calc = FinancialsCalculator.calculateIpcLifecycle(val, finSettings as any);
+    setIpcNet(calc.netValue);
+    setIpcCert(calc.subtotal);
+  };
+
   const handleCreateIPC = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!project || !ipcNum) return;
@@ -337,6 +366,36 @@ export function ProjectWorkspace({
     setShowForm(false);
     setIpcNum('');
     setSelectedWbsId('');
+    reloadAllProjectData();
+  };
+
+  const handleUpdateClaimStatus = async (claimId: string, newStatus: ProjectClaim['status']) => {
+    const claimToUpdate = claims.find(c => c.id === claimId);
+    if (!claimToUpdate || !project) return;
+    
+    const oldStatus = claimToUpdate.status;
+    let allowed = false;
+    if (oldStatus === 'Prepared' && (newStatus === 'Submitted')) allowed = true;
+    else if (oldStatus === 'Submitted' && (newStatus === 'Under Review' || newStatus === 'Prepared')) allowed = true;
+    else if (oldStatus === 'Under Review' && (newStatus === 'Approved' || newStatus === 'Rejected' || newStatus === 'Escalated')) allowed = true;
+    else if ((oldStatus === 'Approved' || oldStatus === 'Rejected' || oldStatus === 'Escalated') && newStatus === 'Under Review') allowed = true;
+    
+    if (!allowed) {
+      alert(isAr ? 'انتقال غير مسموح به في دورة اعتماد المطالبة!' : 'Unauthorized transition in the claim approval lifecycle!');
+      return;
+    }
+
+    const updatedClaim: ProjectClaim = { ...claimToUpdate, status: newStatus };
+    await projectRepo.saveClaim(updatedClaim);
+    await projectRepo.addHistory(
+      project.id,
+      'Claim Status Transition',
+      'System',
+      `Transitioned claim ${claimToUpdate.claimNumber} from ${oldStatus} to ${newStatus}`,
+      'Claim',
+      claimId,
+      claimToUpdate.claimNumber
+    );
     reloadAllProjectData();
   };
 
@@ -512,6 +571,29 @@ export function ProjectWorkspace({
     setShowForm(false);
     setSprMonth('');
     reloadAllProjectData();
+  };
+
+  const handleSubTotalAmtChange = (val: number) => {
+    setSubTotalAmt(val);
+    if (val > 0 && subInvAmt > 0) {
+      setSubCompPct(Math.round((subInvAmt / val) * 100));
+    } else if (val > 0 && subCompPct > 0) {
+      setSubInvAmt(Math.round(val * (subCompPct / 100)));
+    }
+  };
+
+  const handleSubInvAmtChange = (val: number) => {
+    setSubInvAmt(val);
+    if (subTotalAmt > 0) {
+      setSubCompPct(Math.min(Math.round((val / subTotalAmt) * 100), 100));
+    }
+  };
+
+  const handleSubCompPctChange = (val: number) => {
+    setSubCompPct(val);
+    if (subTotalAmt > 0) {
+      setSubInvAmt(Math.round(subTotalAmt * (val / 100)));
+    }
   };
 
   const handleCreateSubcontract = async (e: React.FormEvent) => {
@@ -1923,7 +2005,6 @@ export function ProjectWorkspace({
           />
         )}
 
-        {/* SUBCONTRACTORS TAB */}
         {activeTab === 'subcontractors' && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="flex items-center justify-between">
@@ -1975,12 +2056,12 @@ export function ProjectWorkspace({
 
                 <div className="space-y-1">
                   <label className="block text-[10px] font-bold text-slate-400 uppercase">{isAr ? 'قيمة العقد الكلية من الباطن' : 'Total Subcontract Amount'}</label>
-                  <input required type="number" value={subTotalAmt || ''} onChange={e => setSubTotalAmt(Number(e.target.value))} className="w-full p-2 border rounded-lg bg-white text-slate-800" />
+                  <input required type="number" value={subTotalAmt || ''} onChange={e => handleSubTotalAmtChange(Number(e.target.value))} className="w-full p-2 border rounded-lg bg-white text-slate-800" />
                 </div>
 
                 <div className="space-y-1">
                   <label className="block text-[10px] font-bold text-slate-400 uppercase">{isAr ? 'المبالغ المفتورة المصروفة حتى تاريخه' : 'Till Date Invoiced Amount'}</label>
-                  <input type="number" value={subInvAmt || ''} onChange={e => setSubInvAmt(Number(e.target.value))} className="w-full p-2 border rounded-lg bg-white text-slate-800" />
+                  <input type="number" value={subInvAmt || ''} onChange={e => handleSubInvAmtChange(Number(e.target.value))} className="w-full p-2 border rounded-lg bg-white text-slate-800" />
                 </div>
 
                  <div className="space-y-1">
@@ -1995,7 +2076,7 @@ export function ProjectWorkspace({
 
                 <div className="space-y-1">
                   <label className="block text-[10px] font-bold text-slate-400 uppercase">{isAr ? 'نسبة الإنجاز المالي الفعلي (%)' : 'Completion Percentage'}</label>
-                  <input type="number" min={0} max={100} value={subCompPct || ''} onChange={e => setSubCompPct(Number(e.target.value))} className="w-full p-2 border rounded-lg bg-white text-slate-800" />
+                  <input type="number" min={0} max={100} value={subCompPct || ''} onChange={e => handleSubCompPctChange(Number(e.target.value))} className="w-full p-2 border rounded-lg bg-white text-slate-800" />
                 </div>
 
                 <div className="space-y-1 md:col-span-2">

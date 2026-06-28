@@ -1,5 +1,5 @@
 import { ProjectControlsRecord, ProjectControlsRecordType } from '../domain/project-controls/ProjectControlsRecord';
-import { ExecutionRecord } from '../views/ProjectExecution';
+import { ExecutionRecord } from '../seed/mockData';
 import { Currency } from '../enums/Currency';
 import { RecordStatus } from '../enums/RecordStatus';
 import { FinancialsCalculator } from '../business-rules/FinancialsCalculator';

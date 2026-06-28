@@ -1,9 +1,8 @@
 import { 
   CalendarEvent, EventModuleType, EventCategory, EventPriority, EventStatus, EventNote, EventAttachment, CalendarEventType 
 } from '../types';
-import { initialTenders } from '../../../views/OngoingTenders';
-import { mockExecutionData } from '../../../views/ProjectExecution';
-import { mockDocuments, DocumentRecord } from '../../../views/DocumentControl';
+import { initialTenders } from '../../pre-award/ongoing-tenders/constants/initialTenders';
+import { mockExecutionData, mockDocuments, DocumentRecord } from '../../../seed/mockData';
 import { Settings } from '../../../domain/administration/Settings';
 import { ConflictDetectionEngine } from './ConflictEngine';
 

@@ -10,88 +10,10 @@ import { BiText } from '../components/BiText';
 import { Settings } from '../domain/administration/Settings';
 import { NumberingService } from '../services/NumberingService';
 import { Clock as AppClock } from '../services/Clock';
+import { ExecutionRecord, mockExecutionData } from '../seed/mockData';
 
-export interface ExecutionRecord {
-  id: string;
-  type: 'IPC' | 'Claim' | 'Variation Order' | 'NOC';
-  code: string;
-  projectName: { en: string; ar: string };
-  submittedDate: string;
-  valueAED: string;
-  status: { en: string; ar: string };
-  health: 'Healthy' | 'Urgent' | 'Under Review';
-  department: { en: string; ar: string };
-  contractor: string;
-  progress: number;
-}
-
-export const mockExecutionData: ExecutionRecord[] = [
-  {
-    id: 'E-001',
-    type: 'IPC',
-    code: 'IPC-08-NEOM',
-    projectName: { en: 'Neom Spine Ground Terminal Expansion', ar: 'توسعة محطة النفق الأرضية بمشروع نيوم' },
-    submittedDate: '2026-06-15',
-    valueAED: 'AED 12,450,000',
-    status: { en: 'Awaiting Consultant Signature', ar: 'بانتظار توقيع الاستشاري' },
-    health: 'Healthy',
-    department: { en: 'Infrastructure', ar: 'البنية التحتية' },
-    contractor: 'Rowad General Contracting',
-    progress: 75
-  },
-  {
-    id: 'E-002',
-    type: 'Claim',
-    code: 'CLM-03-ZAYED',
-    projectName: { en: 'Zayed Boulevard Commercial Corridor', ar: 'الممر التجاري بمحور الشيخ زايد' },
-    submittedDate: '2026-06-10',
-    valueAED: 'AED 3,200,000',
-    status: { en: 'Pending PMO Escalation', ar: 'معلق بانتظار تصعيد إدارة المشاريع' },
-    health: 'Urgent',
-    department: { en: 'Commercial Claims', ar: 'المطالبات التجارية' },
-    contractor: 'Al-Suwaidi Electrical Co.',
-    progress: 30
-  },
-  {
-    id: 'E-003',
-    type: 'Variation Order',
-    code: 'VO-12-LOG',
-    projectName: { en: 'Cairo Capital East Logistics Hub', ar: 'المركز اللوجستي لشرق العاصمة الإدارية' },
-    submittedDate: '2026-06-18',
-    valueAED: 'AED 1,850,000',
-    status: { en: 'Approved & Signed', ar: 'تم الاعتماد والتوقيع' },
-    health: 'Healthy',
-    department: { en: 'Design & Engineering', ar: 'التصميم والهندسة' },
-    contractor: 'Egyptian Steel Structures',
-    progress: 100
-  },
-  {
-    id: 'E-004',
-    type: 'NOC',
-    code: 'NOC-44-DIR',
-    projectName: { en: 'Diriyah Blvd District Substructure', ar: 'البنية التحتية لمنطقة بوليفارد الدرعية التاريخية' },
-    submittedDate: '2026-06-12',
-    valueAED: 'N/A (Regulatory)',
-    status: { en: 'Under Municipality Review', ar: 'قيد مراجعة البلدية والهيئة' },
-    health: 'Under Review',
-    department: { en: 'Permits & Relations', ar: 'التصاريح والعلاقات الحكومية' },
-    contractor: 'Saudi Geotechnical Lab',
-    progress: 55
-  },
-  {
-    id: 'E-005',
-    type: 'IPC',
-    code: 'IPC-21-ALM',
-    projectName: { en: 'Al Maktoum Terminal Cargo Ramp', ar: 'مدرج الشحن بمطار آل مكتوم الدولي الجديد' },
-    submittedDate: '2026-06-20',
-    valueAED: 'AED 45,000,000',
-    status: { en: 'Approved & Certified', ar: 'تم الاعتماد والصرف الفعلي' },
-    health: 'Healthy',
-    department: { en: 'Executive Operations', ar: 'العمليات التنفيذية' },
-    contractor: 'Rowad Aviation Infras',
-    progress: 90
-  }
-];
+export type { ExecutionRecord };
+export { mockExecutionData };
 
 export function ProjectExecution({ 
   lang, 

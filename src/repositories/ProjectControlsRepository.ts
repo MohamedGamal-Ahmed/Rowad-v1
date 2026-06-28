@@ -1,6 +1,6 @@
 import { ProjectControlsRecord } from '../domain/project-controls/ProjectControlsRecord';
 import { ProjectControlsMapper } from '../mappers/ProjectControlsMapper';
-import { ExecutionRecord, mockExecutionData } from '../views/ProjectExecution';
+import { ExecutionRecord, mockExecutionData } from '../seed/mockData';
 
 export class ProjectControlsRepository {
   private apiEndpoint = '/api/project-controls/records';

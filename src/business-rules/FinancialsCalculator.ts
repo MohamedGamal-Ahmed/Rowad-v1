@@ -72,6 +72,31 @@ export class FinancialsCalculator {
   }
 
   /**
+   * Calculates complete payment lifecycle metrics for IPCs.
+   * Given a gross value, calculates retention, subtotal, VAT, and net value.
+   */
+  public static calculateIpcLifecycle(
+    grossValue: number,
+    settings: FinancialSettings
+  ): {
+    retention: number;
+    subtotal: number;
+    vat: number;
+    netValue: number;
+  } {
+    const retention = this.calculateRetention(grossValue, settings);
+    const subtotal = grossValue - retention;
+    const vat = this.calculateVAT(subtotal, settings);
+    const netValue = subtotal + vat;
+    return {
+      retention: Math.round(retention * 100) / 100,
+      subtotal: Math.round(subtotal * 100) / 100,
+      vat: Math.round(vat * 100) / 100,
+      netValue: Math.round(netValue * 100) / 100,
+    };
+  }
+
+  /**
    * BR-004: Calculates VAT based on certified subtotal and settings.
    */
   public static calculateVAT(amount: number, settings: FinancialSettings): number {
